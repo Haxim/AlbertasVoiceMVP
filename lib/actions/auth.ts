@@ -25,8 +25,20 @@ export async function login(formData: FormData) {
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) redirect(`/login?message=${encodeURIComponent(error.message)}`);
+  if (data.user) {
+    const service = createServiceClient();
+    await service.from("profiles").upsert(
+      {
+        id: data.user.id,
+        name: (data.user.user_metadata?.name as string | undefined) || null,
+        email: data.user.email || email,
+        role: "CAPTAIN"
+      },
+      { onConflict: "id" }
+    );
+  }
   redirect("/dashboard");
 }
 
