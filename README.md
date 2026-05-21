@@ -8,8 +8,8 @@ Two-week MVP for a consent-first Alberta referendum referral workflow. It intent
 - Supabase Auth and Postgres with RLS
 - Supabase client/server helpers, no ORM
 - Twilio SMS invite delivery and STOP webhook
-- Optional Resend email invite TODO
-- Vercel or Cloudflare Pages deployable
+- Resend email broadcasts from the admin page
+- Cloudflare Workers deployable
 
 ## Local Setup
 
@@ -88,15 +88,29 @@ pnpm wrangler secret put TWILIO_ACCOUNT_SID
 pnpm wrangler secret put TWILIO_AUTH_TOKEN
 pnpm wrangler secret put TWILIO_MESSAGING_SERVICE_SID
 pnpm wrangler secret put TWILIO_FROM_PHONE
+pnpm wrangler secret put RESEND_API_KEY
+pnpm wrangler secret put BROADCAST_FROM_EMAIL
 ```
 
 - Set `NEXT_PUBLIC_APP_URL` to your Cloudflare production URL or custom domain.
 - Never expose `SUPABASE_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY` to the browser.
 - Set the Twilio inbound webhook to `https://your-domain.com/api/twilio/webhook`.
 
+## Email Broadcast Setup
+
+The `/admin` page can send basic email broadcasts through Resend to opted-in subscribers only.
+
+1. Create a Resend account.
+2. Verify your sending domain.
+3. Add `RESEND_API_KEY`.
+4. Set `BROADCAST_FROM_EMAIL` to a verified sender address.
+5. Run `supabase/migrations/202605210003_add_email_broadcast_audit.sql`.
+
+Each broadcast is recorded in `broadcasts`, and per-subscriber results are recorded in `broadcast_deliveries`.
+
 ## Admin Recommendation
 
-Use Retool, Appsmith, or Supabase table access for internal operations in the first two weeks. The built-in `/admin` page only shows counts, audience preview, and CSV export. Full broadcast tooling is deliberately a TODO until approvals, segmentation, and audit requirements are clear.
+Use Supabase table access for deeper internal operations in the first two weeks. The built-in `/admin` page supports counts, audience preview, CSV export, and basic Resend email broadcasts. SMS broadcast tooling is deliberately left out until approvals, segmentation, and audit requirements are clear.
 
 ## Tests
 
@@ -110,4 +124,4 @@ Tests cover duplicate invite prevention, invite acceptance consent validation, p
 
 - Add Resend email invite delivery once sender domain and templates are ready.
 - Add Twilio request-signature verification before public launch if the webhook is exposed beyond Twilio.
-- Add formal broadcast provider abstraction after the first MVP validates consent capture and referral flow.
+- Add a richer broadcast approval workflow after the first MVP validates consent capture and referral flow.

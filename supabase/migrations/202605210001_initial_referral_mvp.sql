@@ -61,6 +61,30 @@ create table public.suppression_list (
   created_at timestamptz default now()
 );
 
+create table public.broadcasts (
+  id uuid primary key default gen_random_uuid(),
+  admin_id uuid references public.profiles(id),
+  channel text check (channel in ('EMAIL','SMS')) not null,
+  preference_filter text check (preference_filter in ('ALL','ALL_UPDATES','WEEKLY_DIGEST','VOTE_REMINDER_ONLY')) not null,
+  subject text,
+  body text not null,
+  audience_count integer default 0,
+  status text check (status in ('DRAFT','SENT','FAILED')) default 'DRAFT',
+  sent_at timestamptz,
+  created_at timestamptz default now()
+);
+
+create table public.broadcast_deliveries (
+  id uuid primary key default gen_random_uuid(),
+  broadcast_id uuid references public.broadcasts(id) on delete cascade,
+  subscriber_id uuid references public.subscribers(id),
+  channel text check (channel in ('EMAIL','SMS')) not null,
+  provider_message_id text,
+  status text check (status in ('SENT','FAILED','SKIPPED')) not null,
+  error text,
+  created_at timestamptz default now()
+);
+
 create unique index suppression_email_unique on public.suppression_list(normalized_email) where normalized_email is not null;
 create unique index suppression_phone_unique on public.suppression_list(normalized_phone) where normalized_phone is not null;
 create unique index active_subscriber_email_unique on public.subscribers(normalized_email) where normalized_email is not null and unsubscribed_at is null;
@@ -152,6 +176,8 @@ alter table public.invites enable row level security;
 alter table public.subscribers enable row level security;
 alter table public.consent_events enable row level security;
 alter table public.suppression_list enable row level security;
+alter table public.broadcasts enable row level security;
+alter table public.broadcast_deliveries enable row level security;
 
 create policy "profiles_select_own_or_admin" on public.profiles
 for select using (auth.uid() = id or public.is_admin());
@@ -189,4 +215,10 @@ create policy "suppression_admin_select" on public.suppression_list
 for select using (public.is_admin());
 
 create policy "suppression_admin_all" on public.suppression_list
+for all using (public.is_admin()) with check (public.is_admin());
+
+create policy "broadcasts_admin_all" on public.broadcasts
+for all using (public.is_admin()) with check (public.is_admin());
+
+create policy "broadcast_deliveries_admin_all" on public.broadcast_deliveries
 for all using (public.is_admin()) with check (public.is_admin());

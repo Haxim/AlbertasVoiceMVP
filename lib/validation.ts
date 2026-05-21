@@ -22,3 +22,10 @@ export const tokenSchema = z.object({
 });
 
 export const preferenceFilterSchema = z.enum(["ALL", "ALL_UPDATES", "WEEKLY_DIGEST", "VOTE_REMINDER_ONLY"]);
+
+export const emailBroadcastSchema = z.object({
+  preference: preferenceFilterSchema,
+  subject: z.string().trim().min(3).max(160),
+  body: z.string().trim().min(10).max(5000),
+  confirmConsent: z.literal("yes")
+});
