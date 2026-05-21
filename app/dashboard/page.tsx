@@ -1,0 +1,101 @@
+import { redirect } from "next/navigation";
+import { createInvite } from "@/lib/actions/invites";
+import { logout } from "@/lib/actions/auth";
+import { getCaptainDashboard } from "@/lib/queries";
+import { getCurrentProfile } from "@/lib/auth";
+import { StatusBadge } from "@/components/status-badge";
+
+export default async function DashboardPage({
+  searchParams
+}: {
+  searchParams?: { message?: string; error?: string };
+}) {
+  const profile = await getCurrentProfile();
+  if (!profile) redirect("/login");
+  const dashboard = await getCaptainDashboard(profile.id);
+
+  return (
+    <main className="mx-auto max-w-6xl px-4 py-8">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Captain dashboard</h1>
+          <p className="mt-1 text-ink/70">Signed in as {profile.name || profile.email}</p>
+        </div>
+        <form action={logout}>
+          <button className="rounded-md border border-line bg-white px-4 py-2 font-medium">Log out</button>
+        </form>
+      </div>
+
+      <section className="mt-6 grid gap-4 sm:grid-cols-3">
+        <Metric label="Accepted referrals" value={dashboard.referralCount} />
+        <Metric label="Pending invites" value={dashboard.pendingCount} />
+        <Metric label="Total invites" value={dashboard.invites.length} />
+      </section>
+
+      <section className="mt-8 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+        <form action={createInvite} className="space-y-4 rounded-lg border border-line bg-white p-5">
+          <h2 className="text-xl font-semibold">Send one consent invite</h2>
+          {searchParams?.message ? <p className="rounded-md bg-field p-3 text-sm">{searchParams.message}</p> : null}
+          {searchParams?.error ? <p className="rounded-md bg-rose/10 p-3 text-sm text-rose">{searchParams.error}</p> : null}
+          <label className="block">
+            <span className="text-sm font-medium">Invitee name</span>
+            <input name="inviteeName" required className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium">Phone</span>
+            <input name="phone" inputMode="tel" placeholder="+1 780 555 0100" className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium">Email</span>
+            <input name="email" type="email" className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
+          </label>
+          <p className="text-sm leading-6 text-ink/70">
+            This sends only an invitation. The recipient is not subscribed until they choose an option and check the
+            consent box.
+          </p>
+          <button className="focus-ring w-full rounded-md bg-spruce px-4 py-3 font-semibold text-white">Send invite</button>
+        </form>
+
+        <div className="overflow-hidden rounded-lg border border-line bg-white">
+          <div className="border-b border-line p-5">
+            <h2 className="text-xl font-semibold">My invite statuses</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] text-left text-sm">
+              <thead className="bg-field text-xs uppercase text-ink/60">
+                <tr>
+                  <th className="px-4 py-3">Name</th>
+                  <th className="px-4 py-3">Contact</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dashboard.invites.map((invite) => (
+                  <tr key={invite.id} className="border-t border-line">
+                    <td className="px-4 py-3 font-medium">{invite.invitee_name}</td>
+                    <td className="px-4 py-3 text-ink/70">{invite.invitee_phone || invite.invitee_email}</td>
+                    <td className="px-4 py-3"><StatusBadge status={invite.status} /></td>
+                    <td className="px-4 py-3 text-ink/60">{new Date(invite.created_at).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+                {dashboard.invites.length === 0 ? (
+                  <tr><td colSpan={4} className="px-4 py-8 text-center text-ink/60">No invites yet.</td></tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-line bg-white p-5">
+      <p className="text-sm font-medium text-ink/65">{label}</p>
+      <p className="mt-2 text-3xl font-bold">{value}</p>
+    </div>
+  );
+}
