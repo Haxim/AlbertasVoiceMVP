@@ -4,7 +4,7 @@ import type { Invite } from "@/lib/types";
 
 export async function getCaptainDashboard(captainId: string) {
   noStore();
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data: invites, error } = await supabase
     .from("invites")
     .select("*")

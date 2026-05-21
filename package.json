@@ -2,9 +2,13 @@
   "name": "albertas-voice-mvp",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@11.2.2",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "preview:cf": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy:cf": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run"
@@ -14,21 +18,23 @@
     "@supabase/supabase-js": "^2.45.4",
     "clsx": "^2.1.1",
     "libphonenumber-js": "^1.11.7",
-    "next": "^14.2.13",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "next": "^15.5.4",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^22.5.5",
-    "@types/react": "^18.3.5",
-    "@types/react-dom": "^18.3.0",
+    "@types/react": "^19.1.16",
+    "@types/react-dom": "^19.1.9",
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.13",
+    "@opennextjs/cloudflare": "^1.0.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",
     "typescript": "^5.6.2",
-    "vitest": "^2.1.1"
+    "vitest": "^2.1.1",
+    "wrangler": "^4.68.0"
   }
 }

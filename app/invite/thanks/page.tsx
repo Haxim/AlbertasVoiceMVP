@@ -1,7 +1,8 @@
 import Link from "next/link";
 
-export default function InviteThanksPage({ searchParams }: { searchParams?: { declined?: string } }) {
-  const declined = searchParams?.declined === "1";
+export default async function InviteThanksPage({ searchParams }: { searchParams?: Promise<{ declined?: string }> }) {
+  const params = await searchParams;
+  const declined = params?.declined === "1";
   return (
     <main className="mx-auto max-w-xl px-4 py-16">
       <div className="rounded-lg border border-line bg-white p-6 text-center">

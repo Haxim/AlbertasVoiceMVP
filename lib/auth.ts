@@ -3,7 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
 
 export async function getCurrentProfile(): Promise<Profile | null> {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return null;
   const { data, error } = await supabase.from("profiles").select("*").eq("id", auth.user.id).single();

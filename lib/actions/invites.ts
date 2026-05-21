@@ -28,7 +28,7 @@ export async function acceptInvite(formData: FormData) {
     preference: formData.get("preference"),
     consent: formData.get("consent")
   });
-  const h = headers();
+  const h = await headers();
   await acceptInviteByToken(parsed.token, parsed.preference, {
     ip: h.get("x-forwarded-for"),
     userAgent: h.get("user-agent")
@@ -38,7 +38,7 @@ export async function acceptInvite(formData: FormData) {
 
 export async function declineInvite(formData: FormData) {
   const parsed = tokenSchema.parse({ token: formData.get("token") });
-  const h = headers();
+  const h = await headers();
   await declineInviteByToken(parsed.token, {
     ip: h.get("x-forwarded-for"),
     userAgent: h.get("user-agent")

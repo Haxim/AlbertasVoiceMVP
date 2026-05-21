@@ -2,8 +2,9 @@ import { notFound } from "next/navigation";
 import { acceptInvite, declineInvite } from "@/lib/actions/invites";
 import { getInviteByToken } from "@/lib/queries";
 
-export default async function InvitePage({ params }: { params: { token: string } }) {
-  const invite = await getInviteByToken(params.token);
+export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  const invite = await getInviteByToken(token);
   if (!invite) notFound();
   const captainName = invite.profiles?.name || "a local captain";
   const isClosed = invite.status !== "PENDING";
@@ -20,7 +21,7 @@ export default async function InvitePage({ params }: { params: { token: string }
           <p className="mt-6 rounded-md bg-field p-4 font-medium">This invite is currently marked {invite.status.toLowerCase()}.</p>
         ) : (
           <form action={acceptInvite} className="mt-6 space-y-5">
-            <input type="hidden" name="token" value={params.token} />
+            <input type="hidden" name="token" value={token} />
             <div className="space-y-3">
               {[
                 ["ALL_UPDATES", "All updates"],
@@ -45,7 +46,7 @@ export default async function InvitePage({ params }: { params: { token: string }
         )}
         {!isClosed ? (
           <form action={declineInvite} className="mt-3">
-            <input type="hidden" name="token" value={params.token} />
+            <input type="hidden" name="token" value={token} />
             <button className="focus-ring w-full rounded-md border border-line px-4 py-3 font-semibold">No thanks</button>
           </form>
         ) : null}

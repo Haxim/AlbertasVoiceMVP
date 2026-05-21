@@ -21,11 +21,21 @@ npm run dev
 
 Set the Supabase and Twilio values in `.env.local`. If Twilio is not configured, invites are still created and consent links still work.
 
+For current Supabase projects, use the API URL plus the new API keys:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+SUPABASE_SECRET_KEY=sb_secret_...
+```
+
+The URL must be the project API URL only, not a Supabase dashboard URL and not a URL with `/auth`, `/rest`, or another path.
+
 ## Supabase Setup
 
 1. Create a Supabase project.
 2. Run `supabase/migrations/202605210001_initial_referral_mvp.sql` in the SQL editor or through the Supabase CLI.
-3. Copy the project URL, anon key, and service role key into environment variables.
+3. Copy the project URL, publishable key, and secret key into environment variables.
 4. Enable email/password auth in Supabase Auth.
 5. Create your first user through `/signup`.
 6. Promote the first admin in SQL:
@@ -50,12 +60,39 @@ https://your-domain.example/api/twilio/webhook
 
 STOP, STOPALL, UNSUBSCRIBE, CANCEL, END, and QUIT add the phone to `suppression_list`, unsubscribe matching subscribers, mark accepted invites unsubscribed, and log consent events.
 
-## Deployment Notes
+## Cloudflare Deployment
 
-- Vercel is the simplest target. Add all `.env.example` values in project settings.
-- Cloudflare Pages can work with Next support, but verify server actions and route handlers in your selected adapter before launch.
-- Never expose `SUPABASE_SERVICE_ROLE_KEY` to the browser.
-- Set `NEXT_PUBLIC_APP_URL` to the production URL so invite links are correct.
+- Use Cloudflare Workers with OpenNext, not static Pages export. This app uses server actions, route handlers, auth cookies, CSV export, and a Twilio webhook.
+- Install dependencies, then preview the Worker runtime locally:
+
+```bash
+pnpm install
+pnpm run preview:cf
+```
+
+- Log in and deploy:
+
+```bash
+pnpm wrangler login
+pnpm run deploy:cf
+```
+
+- Add production secrets in Cloudflare Workers settings or with Wrangler:
+
+```bash
+pnpm wrangler secret put NEXT_PUBLIC_APP_URL
+pnpm wrangler secret put NEXT_PUBLIC_SUPABASE_URL
+pnpm wrangler secret put NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+pnpm wrangler secret put SUPABASE_SECRET_KEY
+pnpm wrangler secret put TWILIO_ACCOUNT_SID
+pnpm wrangler secret put TWILIO_AUTH_TOKEN
+pnpm wrangler secret put TWILIO_MESSAGING_SERVICE_SID
+pnpm wrangler secret put TWILIO_FROM_PHONE
+```
+
+- Set `NEXT_PUBLIC_APP_URL` to your Cloudflare production URL or custom domain.
+- Never expose `SUPABASE_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY` to the browser.
+- Set the Twilio inbound webhook to `https://your-domain.com/api/twilio/webhook`.
 
 ## Admin Recommendation
 

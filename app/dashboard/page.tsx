@@ -8,8 +8,9 @@ import { StatusBadge } from "@/components/status-badge";
 export default async function DashboardPage({
   searchParams
 }: {
-  searchParams?: { message?: string; error?: string };
+  searchParams?: Promise<{ message?: string; error?: string }>;
 }) {
+  const params = await searchParams;
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
   const dashboard = await getCaptainDashboard(profile.id);
@@ -35,8 +36,8 @@ export default async function DashboardPage({
       <section className="mt-8 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <form action={createInvite} className="space-y-4 rounded-lg border border-line bg-white p-5">
           <h2 className="text-xl font-semibold">Send one consent invite</h2>
-          {searchParams?.message ? <p className="rounded-md bg-field p-3 text-sm">{searchParams.message}</p> : null}
-          {searchParams?.error ? <p className="rounded-md bg-rose/10 p-3 text-sm text-rose">{searchParams.error}</p> : null}
+          {params?.message ? <p className="rounded-md bg-field p-3 text-sm">{params.message}</p> : null}
+          {params?.error ? <p className="rounded-md bg-rose/10 p-3 text-sm text-rose">{params.error}</p> : null}
           <label className="block">
             <span className="text-sm font-medium">Invitee name</span>
             <input name="inviteeName" required className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />

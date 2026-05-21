@@ -3,6 +3,8 @@ node_modules
 .env
 .env.local
 .vercel
+.open-next
+.wrangler
 .corepack
 .pnpm-store
 coverage

@@ -1,9 +1,15 @@
 import { signup } from "@/lib/actions/auth";
 
-export default function SignupPage() {
+export default async function SignupPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ message?: string }>;
+}) {
+  const params = await searchParams;
   return (
     <main className="mx-auto max-w-md px-4 py-12">
       <h1 className="text-3xl font-bold">Captain signup</h1>
+      {params?.message ? <p className="mt-4 rounded-md bg-white p-3 text-sm">{params.message}</p> : null}
       <form action={signup} className="mt-6 space-y-4 rounded-lg border border-line bg-white p-5">
         <label className="block">
           <span className="text-sm font-medium">Name</span>
