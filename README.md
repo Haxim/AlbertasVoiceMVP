@@ -48,6 +48,8 @@ where email = 'you@example.com';
 
 RLS is enabled. Captains can see only their own invites/subscribers. Admins can see all records. Public invite acceptance uses the server-only service role key because recipients are not authenticated.
 
+For existing databases, also run later migrations in order, especially `202605210004_tighten_captain_rls.sql`, which locks captain visibility to rows tied to their own invite records.
+
 ## Twilio Setup
 
 1. Add `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN`.

@@ -51,3 +51,12 @@ export function filterSubscribersByPreference<T extends { preference: Preference
 export function captainCanAccessInvite(captainId: string, invite: { captain_id: string }) {
   return invite.captain_id === captainId;
 }
+
+export function captainCanAccessRowForInvite(
+  captainId: string,
+  row: { invite_id?: string | null },
+  invites: Array<{ id: string; captain_id: string }>
+) {
+  if (!row.invite_id) return false;
+  return invites.some((invite) => invite.id === row.invite_id && invite.captain_id === captainId);
+}

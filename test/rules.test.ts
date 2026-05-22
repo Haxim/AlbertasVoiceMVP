@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { captainCanAccessInvite, filterSubscribersByPreference, hasDuplicateActiveContact, isSuppressed } from "@/lib/rules";
+import {
+  captainCanAccessInvite,
+  captainCanAccessRowForInvite,
+  filterSubscribersByPreference,
+  hasDuplicateActiveContact,
+  isSuppressed
+} from "@/lib/rules";
 import { normalizeEmail, normalizePhone } from "@/lib/normalization";
 
 describe("referral rules", () => {
@@ -35,6 +41,16 @@ describe("referral rules", () => {
   it("enforces captain access restrictions", () => {
     expect(captainCanAccessInvite("captain-a", { captain_id: "captain-a" })).toBe(true);
     expect(captainCanAccessInvite("captain-a", { captain_id: "captain-b" })).toBe(false);
+  });
+
+  it("limits related subscriber and consent rows to the inviting captain", () => {
+    const invites = [
+      { id: "invite-a", captain_id: "captain-a" },
+      { id: "invite-b", captain_id: "captain-b" }
+    ];
+    expect(captainCanAccessRowForInvite("captain-a", { invite_id: "invite-a" }, invites)).toBe(true);
+    expect(captainCanAccessRowForInvite("captain-a", { invite_id: "invite-b" }, invites)).toBe(false);
+    expect(captainCanAccessRowForInvite("captain-a", { invite_id: null }, invites)).toBe(false);
   });
 
   it("blocks suppressed contacts", () => {
