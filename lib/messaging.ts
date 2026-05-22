@@ -9,6 +9,21 @@ export function smsInviteText(captainName: string, invite: Pick<Invite, "token">
   return `${captainName} invited you to choose whether to receive Alberta's Voice updates. You are not subscribed unless you opt in: ${inviteUrl(invite.token)}`;
 }
 
+export function emailInviteSubject(captainName: string) {
+  return `${captainName} invited you to Alberta's Voice`;
+}
+
+export function emailInviteText(captainName: string, invite: Pick<Invite, "invitee_name" | "token">) {
+  return `Hi ${invite.invitee_name},
+
+${captainName} invited you to choose whether to receive Alberta's Voice updates.
+
+You are not subscribed unless you opt in. Review the invitation and choose your preference here:
+${inviteUrl(invite.token)}
+
+If you do not want updates, you can decline from that page.`;
+}
+
 export async function sendSmsInvite(to: string, body: string) {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;

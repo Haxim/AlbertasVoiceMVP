@@ -1,4 +1,5 @@
 import { signup } from "@/lib/actions/auth";
+import { Turnstile } from "@/components/turnstile";
 
 export default async function SignupPage({
   searchParams
@@ -23,6 +24,7 @@ export default async function SignupPage({
           <span className="text-sm font-medium">Password</span>
           <input name="password" type="password" minLength={8} required className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
         </label>
+        <Turnstile />
         <button className="focus-ring w-full rounded-md bg-spruce px-4 py-3 font-semibold text-white">Create account</button>
       </form>
     </main>

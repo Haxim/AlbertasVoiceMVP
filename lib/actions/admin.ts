@@ -1,9 +1,11 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { emailBroadcastSchema, preferenceFilterSchema } from "@/lib/validation";
 import { previewAudienceCount, sendEmailBroadcast as sendEmailBroadcastServer } from "@/lib/server/admin";
+import { getRequestIp, verifyTurnstileToken } from "@/lib/turnstile";
 
 export async function previewBroadcastAudience(formData: FormData) {
   await requireAdmin();
@@ -20,6 +22,7 @@ export async function adminExportSubscribers(formData: FormData) {
 
 export async function sendEmailBroadcast(formData: FormData) {
   const admin = await requireAdmin();
+  const h = await headers();
   const parsed = emailBroadcastSchema.safeParse({
     preference: formData.get("preference"),
     subject: formData.get("subject"),
@@ -30,15 +33,18 @@ export async function sendEmailBroadcast(formData: FormData) {
     redirect(`/admin?error=${encodeURIComponent(parsed.error.issues[0]?.message || "Invalid broadcast.")}`);
   }
 
+  let message = "Email sent.";
   try {
+    await verifyTurnstileToken(formData.get("cf-turnstile-response"), getRequestIp(h));
     const result = await sendEmailBroadcastServer({
       admin,
       preference: parsed.data.preference,
       subject: parsed.data.subject,
       body: parsed.data.body
     });
-    redirect(`/admin?message=${encodeURIComponent(`Email sent to ${result.audienceCount} subscribers. ${result.failed} failed.`)}`);
+    message = `Email sent to ${result.audienceCount} subscribers. ${result.failed} failed.`;
   } catch (error) {
     redirect(`/admin?error=${encodeURIComponent(error instanceof Error ? error.message : "Email broadcast failed.")}`);
   }
+  redirect(`/admin?message=${encodeURIComponent(message)}`);
 }

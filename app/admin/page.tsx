@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { adminExportSubscribers, previewBroadcastAudience, sendEmailBroadcast } from "@/lib/actions/admin";
 import { getCurrentProfile, requireAdmin } from "@/lib/auth";
 import { getAdminCounts } from "@/lib/queries";
+import { Turnstile } from "@/components/turnstile";
 
 export default async function AdminPage({
   searchParams
@@ -56,6 +57,7 @@ export default async function AdminPage({
               Send only to opted-in, non-unsubscribed subscribers matching this preference. I have reviewed the message.
             </span>
           </label>
+          <Turnstile />
           <button className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white">Send email</button>
         </form>
       </section>

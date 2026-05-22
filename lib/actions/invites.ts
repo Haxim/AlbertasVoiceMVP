@@ -5,21 +5,26 @@ import { redirect } from "next/navigation";
 import { requireCaptain } from "@/lib/auth";
 import { acceptInviteSchema, createInviteSchema, tokenSchema } from "@/lib/validation";
 import { acceptInviteByToken, createInviteForCaptain, declineInviteByToken } from "@/lib/server/invites";
+import { getRequestIp, verifyTurnstileToken } from "@/lib/turnstile";
 
 export async function createInvite(formData: FormData) {
   const captain = await requireCaptain();
+  const h = await headers();
   const parsed = createInviteSchema.safeParse({
     inviteeName: formData.get("inviteeName"),
     email: formData.get("email"),
     phone: formData.get("phone")
   });
   if (!parsed.success) redirect(`/dashboard?error=${encodeURIComponent(parsed.error.issues[0]?.message || "Invalid invite.")}`);
+  let message = "Invite created.";
   try {
-    await createInviteForCaptain(captain, parsed.data);
+    await verifyTurnstileToken(formData.get("cf-turnstile-response"), getRequestIp(h));
+    const result = await createInviteForCaptain(captain, parsed.data);
+    message = inviteDeliveryMessage(result.delivery);
   } catch (error) {
     redirect(`/dashboard?error=${encodeURIComponent(error instanceof Error ? error.message : "Invite failed.")}`);
   }
-  redirect("/dashboard?message=Invite created. SMS was sent when Twilio is configured.");
+  redirect(`/dashboard?message=${encodeURIComponent(message)}`);
 }
 
 export async function acceptInvite(formData: FormData) {
@@ -44,4 +49,21 @@ export async function declineInvite(formData: FormData) {
     userAgent: h.get("user-agent")
   });
   redirect("/invite/thanks?declined=1");
+}
+
+function inviteDeliveryMessage(delivery: { email: string; sms: string }) {
+  const sent = [
+    delivery.email === "sent" ? "email" : null,
+    delivery.sms === "sent" ? "SMS" : null
+  ].filter(Boolean);
+  if (sent.length) return `Invite created and sent by ${sent.join(" and ")}.`;
+
+  const skipped = [
+    delivery.email === "skipped" ? "Resend email" : null,
+    delivery.sms === "skipped" ? "Twilio SMS" : null
+  ].filter(Boolean);
+  if (skipped.length === 1) return `Invite created, but ${skipped[0]} delivery is not configured.`;
+  if (skipped.length) return `Invite created, but ${skipped.join(" and ")} delivery are not configured.`;
+
+  return "Invite created.";
 }

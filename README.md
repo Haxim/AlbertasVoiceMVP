@@ -8,7 +8,8 @@ Two-week MVP for a consent-first Alberta referendum referral workflow. It intent
 - Supabase Auth and Postgres with RLS
 - Supabase client/server helpers, no ORM
 - Twilio SMS invite delivery and STOP webhook
-- Resend email broadcasts from the admin page
+- Resend email invites and broadcasts
+- Cloudflare Turnstile on signup and email send forms
 - Cloudflare Workers deployable
 
 ## Local Setup
@@ -19,7 +20,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Set the Supabase and Twilio values in `.env.local`. If Twilio is not configured, invites are still created and consent links still work.
+Set the Supabase, delivery, and Turnstile values in `.env.local`. If Twilio or Resend is not configured, invites are still created and consent links still work.
 
 For current Supabase projects, use the API URL plus the new API keys:
 
@@ -91,7 +92,10 @@ pnpm wrangler secret put TWILIO_AUTH_TOKEN
 pnpm wrangler secret put TWILIO_MESSAGING_SERVICE_SID
 pnpm wrangler secret put TWILIO_FROM_PHONE
 pnpm wrangler secret put RESEND_API_KEY
+pnpm wrangler secret put INVITE_FROM_EMAIL
 pnpm wrangler secret put BROADCAST_FROM_EMAIL
+pnpm wrangler secret put NEXT_PUBLIC_TURNSTILE_SITE_KEY
+pnpm wrangler secret put TURNSTILE_SECRET_KEY
 ```
 
 - Set `NEXT_PUBLIC_APP_URL` to your Cloudflare production URL or custom domain.
@@ -100,15 +104,26 @@ pnpm wrangler secret put BROADCAST_FROM_EMAIL
 
 ## Email Broadcast Setup
 
-The `/admin` page can send basic email broadcasts through Resend to opted-in subscribers only.
+Invite emails and the `/admin` broadcast page use Resend. Broadcasts are sent to opted-in subscribers only.
 
 1. Create a Resend account.
 2. Verify your sending domain.
 3. Add `RESEND_API_KEY`.
-4. Set `BROADCAST_FROM_EMAIL` to a verified sender address.
+4. Set `INVITE_FROM_EMAIL` and `BROADCAST_FROM_EMAIL` to verified sender addresses.
 5. Run `supabase/migrations/202605210003_add_email_broadcast_audit.sql`.
 
 Each broadcast is recorded in `broadcasts`, and per-subscriber results are recorded in `broadcast_deliveries`.
+
+## Turnstile Setup
+
+Create a Cloudflare Turnstile widget and add both keys:
+
+```env
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
+```
+
+When both values are configured, captain signup, invite sending, and admin email broadcasts require successful human verification.
 
 ## Admin Recommendation
 
@@ -124,6 +139,5 @@ Tests cover duplicate invite prevention, invite acceptance consent validation, p
 
 ## Shipping TODOs
 
-- Add Resend email invite delivery once sender domain and templates are ready.
 - Add Twilio request-signature verification before public launch if the webhook is exposed beyond Twilio.
 - Add a richer broadcast approval workflow after the first MVP validates consent capture and referral flow.

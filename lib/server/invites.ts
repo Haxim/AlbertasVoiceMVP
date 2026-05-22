@@ -2,8 +2,11 @@ import crypto from "node:crypto";
 import { createServiceClient } from "@/lib/supabase/server";
 import { normalizeEmail, normalizePhone } from "@/lib/normalization";
 import { hasDuplicateActiveContact, isSuppressed } from "@/lib/rules";
-import { smsInviteText, sendSmsInvite } from "@/lib/messaging";
+import { emailInviteSubject, emailInviteText, smsInviteText, sendSmsInvite } from "@/lib/messaging";
+import { sendEmail } from "@/lib/email";
 import type { Preference, Profile } from "@/lib/types";
+
+export type InviteDeliveryStatus = "sent" | "skipped" | "none";
 
 export async function createInviteForCaptain(
   captain: Profile,
@@ -51,6 +54,12 @@ export async function createInviteForCaptain(
     .single();
   if (error) throw error;
 
+  const captainName = captain.name || "A local captain";
+  const delivery: { email: InviteDeliveryStatus; sms: InviteDeliveryStatus } = {
+    email: normalized_email ? "skipped" : "none",
+    sms: normalized_phone ? "skipped" : "none"
+  };
+
   await logConsentEvent({
     invite_id: data.id,
     event_type: "INVITE_SENT",
@@ -59,10 +68,22 @@ export async function createInviteForCaptain(
   });
 
   if (normalized_phone) {
-    await sendSmsInvite(normalized_phone, smsInviteText(captain.name || "A local captain", data));
+    const result = await sendSmsInvite(normalized_phone, smsInviteText(captainName, data));
+    delivery.sms = result && "skipped" in result ? "skipped" : "sent";
   }
-  // TODO: send email invite through Resend when RESEND_API_KEY and templates are finalized.
-  return data;
+  if (normalized_email) {
+    if (process.env.RESEND_API_KEY && (process.env.INVITE_FROM_EMAIL || process.env.BROADCAST_FROM_EMAIL)) {
+      await sendEmail({
+        to: normalized_email,
+        subject: emailInviteSubject(captainName),
+        text: emailInviteText(captainName, data)
+      });
+      delivery.email = "sent";
+    } else {
+      console.warn("Resend env missing; invite created but email not sent.");
+    }
+  }
+  return { invite: data, delivery };
 }
 
 export async function acceptInviteByToken(token: string, preference: Preference, requestMeta: RequestMeta = {}) {

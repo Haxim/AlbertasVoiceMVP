@@ -4,6 +4,7 @@ import { logout } from "@/lib/actions/auth";
 import { getCaptainDashboard } from "@/lib/queries";
 import { getCurrentProfile } from "@/lib/auth";
 import { StatusBadge } from "@/components/status-badge";
+import { Turnstile } from "@/components/turnstile";
 
 export default async function DashboardPage({
   searchParams
@@ -54,6 +55,7 @@ export default async function DashboardPage({
             This sends only an invitation. The recipient is not subscribed until they choose an option and check the
             consent box.
           </p>
+          <Turnstile />
           <button className="focus-ring w-full rounded-md bg-spruce px-4 py-3 font-semibold text-white">Send invite</button>
         </form>
 

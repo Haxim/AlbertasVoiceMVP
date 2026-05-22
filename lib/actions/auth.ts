@@ -1,9 +1,18 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient, createServiceClient } from "@/lib/supabase/server";
+import { getRequestIp, verifyTurnstileToken } from "@/lib/turnstile";
 
 export async function signup(formData: FormData) {
+  const h = await headers();
+  try {
+    await verifyTurnstileToken(formData.get("cf-turnstile-response"), getRequestIp(h));
+  } catch (error) {
+    redirect(`/signup?message=${encodeURIComponent(error instanceof Error ? error.message : "Human verification failed.")}`);
+  }
+
   const name = String(formData.get("name") || "").trim();
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");
