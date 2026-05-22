@@ -1,7 +1,7 @@
 import { clsx } from "clsx";
 
 const styles: Record<string, string> = {
-  PENDING: "bg-gold/15 text-[#7a540c]",
+  PENDING: "bg-gold/25 text-[#745400]",
   ACCEPTED: "bg-spruce/15 text-spruce",
   DECLINED: "bg-ink/10 text-ink/70",
   EXPIRED: "bg-ink/10 text-ink/70",

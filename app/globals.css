@@ -3,12 +3,15 @@
 @tailwind utilities;
 
 :root {
-  color: #18202a;
-  background: #f7f8f5;
+  color: #064b70;
+  background: #f0f8f3;
 }
 
 body {
   min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(94, 201, 233, 0.18) 0%, rgba(240, 248, 243, 0) 320px),
+    #f0f8f3;
 }
 
 input,

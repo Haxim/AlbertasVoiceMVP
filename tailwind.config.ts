@@ -5,12 +5,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#18202a",
-        field: "#f7f8f5",
-        line: "#d9ded5",
-        spruce: "#1e5b4f",
-        gold: "#d8a03d",
-        rose: "#b94e48"
+        ink: "#064b70",
+        field: "#f0f8f3",
+        line: "#b9dbd3",
+        spruce: "#074f74",
+        gold: "#ffc72c",
+        rose: "#f25583",
+        sky: "#5ec9e9",
+        grass: "#7bc96f",
+        petal: "#f25583",
+        cream: "#fff3dc"
       }
     }
   },
