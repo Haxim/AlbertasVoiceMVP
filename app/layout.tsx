@@ -2,8 +2,8 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata = {
-  title: "Alberta's Voice Referral MVP",
-  description: "Consent-first referendum referral workflow for Alberta captains.",
+  title: "Alberta's Voice Community",
+  description: "Join Alberta's Voice captains building a grassroots community to keep Alberta in Canada.",
   icons: {
     icon: "/icon.png",
     apple: "/icon.png"
