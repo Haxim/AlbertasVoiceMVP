@@ -86,18 +86,19 @@ export async function sendEmailBroadcast({
         subscriber_id: subscriber.id,
         channel: "EMAIL",
         status: "FAILED",
-        error: error instanceof Error ? error.message : "Unknown send error"
+        error: errorMessage(error)
       });
     }
   }
 
-  await service
+  const { error: updateError } = await service
     .from("broadcasts")
     .update({
       status: failed > 0 ? "FAILED" : "SENT",
       sent_at: new Date().toISOString()
     })
     .eq("id", broadcast.id);
+  if (updateError) throw updateError;
 
   return { audienceCount: audience.length, failed };
 }
@@ -111,4 +112,17 @@ function senderNameForSubscriber(subscriber: { profiles?: { name?: string | null
   const profile = Array.isArray(subscriber.profiles) ? subscriber.profiles[0] : subscriber.profiles;
   const captainName = profile?.name?.trim();
   return captainName ? `${captainName} on behalf of Alberta's Voice` : "Alberta's Voice";
+}
+
+function errorMessage(error: unknown) {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "string" && error.trim()) return error;
+  if (error && typeof error === "object") {
+    const record = error as Record<string, unknown>;
+    for (const key of ["message", "error", "details", "hint", "code"]) {
+      const value = record[key];
+      if (typeof value === "string" && value.trim()) return value;
+    }
+  }
+  return "Unknown send error";
 }

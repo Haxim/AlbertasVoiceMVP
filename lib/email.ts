@@ -1,3 +1,5 @@
+import { runtimeEnv } from "@/lib/runtime-env";
+
 export async function sendEmail({
   to,
   subject,
@@ -11,8 +13,8 @@ export async function sendEmail({
   html?: string;
   fromName?: string;
 }) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.BROADCAST_FROM_EMAIL || process.env.INVITE_FROM_EMAIL;
+  const apiKey = await runtimeEnv("RESEND_API_KEY");
+  const fromEmail = (await runtimeEnv("BROADCAST_FROM_EMAIL")) || (await runtimeEnv("INVITE_FROM_EMAIL"));
   if (!apiKey) throw new Error("RESEND_API_KEY is not configured.");
   if (!fromEmail) throw new Error("BROADCAST_FROM_EMAIL or INVITE_FROM_EMAIL is required.");
 
