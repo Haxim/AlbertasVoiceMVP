@@ -21,6 +21,15 @@ export const tokenSchema = z.object({
   token: z.string().min(20)
 });
 
+export const subscriptionTokenSchema = z.object({
+  token: z.string().min(20)
+});
+
+export const updateSubscriptionSchema = z.object({
+  token: z.string().min(20),
+  preference: z.enum(["ALL_UPDATES", "WEEKLY_DIGEST", "VOTE_REMINDER_ONLY"])
+});
+
 export const preferenceFilterSchema = z.enum(["ALL", "ALL_UPDATES", "WEEKLY_DIGEST", "VOTE_REMINDER_ONLY"]);
 
 export const emailBroadcastSchema = z.object({

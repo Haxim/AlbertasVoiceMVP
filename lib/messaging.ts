@@ -5,6 +5,11 @@ export function inviteUrl(token: string) {
   return `${baseUrl.replace(/\/$/, "")}/invite/${token}`;
 }
 
+export function subscriptionUrl(token: string) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  return `${baseUrl.replace(/\/$/, "")}/subscription/${token}`;
+}
+
 export function smsInviteText(captainName: string, invite: Pick<Invite, "token">) {
   return `${captainName} invited you to choose whether to receive Alberta's Voice updates. You are not subscribed unless you opt in: ${inviteUrl(invite.token)}`;
 }
@@ -22,6 +27,18 @@ You are not subscribed unless you opt in. Review the invitation and choose your 
 ${inviteUrl(invite.token)}
 
 If you do not want updates, you can decline from that page.`;
+}
+
+export function emailBroadcastText(body: string, token: string) {
+  const manageUrl = subscriptionUrl(token);
+  return `${body}
+
+--
+You are receiving this because you opted in to Alberta's Voice email updates.
+You can manage your subscription or unsubscribe at any time:
+${manageUrl}
+
+Alberta's Voice`;
 }
 
 export async function sendSmsInvite(to: string, body: string) {
