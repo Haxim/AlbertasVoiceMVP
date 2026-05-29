@@ -2,11 +2,13 @@ export async function sendEmail({
   to,
   subject,
   text,
+  html,
   fromName = "Alberta's Voice"
 }: {
   to: string;
   subject: string;
   text: string;
+  html?: string;
   fromName?: string;
 }) {
   const apiKey = process.env.RESEND_API_KEY;
@@ -22,7 +24,7 @@ export async function sendEmail({
       authorization: `Bearer ${apiKey}`,
       "content-type": "application/json"
     },
-    body: JSON.stringify({ from, to, subject, text })
+    body: JSON.stringify({ from, to, subject, text, html })
   });
 
   const payload = (await response.json().catch(() => ({}))) as { id?: string; message?: string; name?: string };

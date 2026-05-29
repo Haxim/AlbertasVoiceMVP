@@ -1,6 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { sendEmail } from "@/lib/email";
-import { emailBroadcastText } from "@/lib/messaging";
+import { emailBroadcastHtml, emailBroadcastText } from "@/lib/messaging";
 import { filterSubscribersByPreference } from "@/lib/rules";
 import type { PreferenceFilter, Profile } from "@/lib/types";
 
@@ -69,6 +69,7 @@ export async function sendEmailBroadcast({
         to: subscriber.email,
         subject,
         text: emailBroadcastText(body, subscriber.subscription_token),
+        html: emailBroadcastHtml(body, subscriber.subscription_token),
         fromName: senderNameForSubscriber(subscriber)
       });
       await service.from("broadcast_deliveries").insert({
