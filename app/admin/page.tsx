@@ -3,6 +3,7 @@ import { adminExportSubscribers, previewBroadcastAudience, sendEmailBroadcast } 
 import { getCurrentProfile, requireAdmin } from "@/lib/auth";
 import { getAdminCounts } from "@/lib/queries";
 import { Turnstile } from "@/components/turnstile";
+import { runtimeEnv } from "@/lib/runtime-env";
 
 export default async function AdminPage({
   searchParams
@@ -14,6 +15,7 @@ export default async function AdminPage({
   if (!profile) redirect("/login");
   await requireAdmin(profile);
   const counts = await getAdminCounts();
+  const turnstileSiteKey = await runtimeEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY");
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
@@ -57,7 +59,7 @@ export default async function AdminPage({
               Send only to opted-in, non-unsubscribed subscribers matching this preference. I have reviewed the message.
             </span>
           </label>
-          <Turnstile />
+          <Turnstile siteKey={turnstileSiteKey} />
           <button className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white">Send email</button>
         </form>
       </section>

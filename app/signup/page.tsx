@@ -1,5 +1,6 @@
 import { signup } from "@/lib/actions/auth";
 import { Turnstile } from "@/components/turnstile";
+import { runtimeEnv } from "@/lib/runtime-env";
 
 export default async function SignupPage({
   searchParams
@@ -7,6 +8,7 @@ export default async function SignupPage({
   searchParams?: Promise<{ message?: string }>;
 }) {
   const params = await searchParams;
+  const turnstileSiteKey = await runtimeEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY");
   return (
     <main className="mx-auto max-w-md px-4 py-12">
       <h1 className="text-3xl font-bold">Captain signup</h1>
@@ -24,7 +26,7 @@ export default async function SignupPage({
           <span className="text-sm font-medium">Password</span>
           <input name="password" type="password" minLength={8} required className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
         </label>
-        <Turnstile />
+        <Turnstile siteKey={turnstileSiteKey} />
         <button className="focus-ring w-full rounded-md bg-spruce px-4 py-3 font-semibold text-white">Create account</button>
       </form>
     </main>

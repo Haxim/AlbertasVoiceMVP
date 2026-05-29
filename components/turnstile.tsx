@@ -12,8 +12,7 @@ declare global {
   }
 }
 
-export function Turnstile() {
-  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+export function Turnstile({ siteKey }: { siteKey?: string | null }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
 
