@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getCurrentProfile } from "@/lib/auth";
 import "./globals.css";
 
 export const metadata = {
@@ -10,7 +11,9 @@ export const metadata = {
   }
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const profile = await getCurrentProfile();
+
   return (
     <html lang="en">
       <body className="bg-field text-ink antialiased">
@@ -24,6 +27,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/leaderboard" className="hover:text-spruce">
                 Leaderboard
               </Link>
+              {profile?.role === "ADMIN" ? (
+                <Link href="/admin" className="hover:text-spruce">
+                  Admin
+                </Link>
+              ) : null}
               <Link href="/dashboard" className="rounded-md bg-spruce px-3 py-2 text-white shadow-sm shadow-sky/20 hover:bg-spruce/90">
                 Captain
               </Link>

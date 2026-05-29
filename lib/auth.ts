@@ -10,11 +10,12 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   if (!error && data) return data as Profile;
 
   const service = createServiceClient();
+  const { data: existingProfile } = await service.from("profiles").select("role,name").eq("id", auth.user.id).maybeSingle();
   const fallbackProfile = {
     id: auth.user.id,
-    name: (auth.user.user_metadata?.name as string | undefined) || null,
+    name: existingProfile?.name || (auth.user.user_metadata?.name as string | undefined) || null,
     email: auth.user.email || null,
-    role: "CAPTAIN"
+    role: existingProfile?.role || "CAPTAIN"
   };
   const { data: createdProfile, error: createError } = await service
     .from("profiles")

@@ -24,8 +24,7 @@ export async function signup(formData: FormData) {
   });
   if (error) redirect(`/signup?message=${encodeURIComponent(error.message)}`);
   if (data.user) {
-    const service = createServiceClient();
-    await service.from("profiles").upsert({ id: data.user.id, name, email, role: "CAPTAIN" });
+    await ensureAuthProfile(data.user.id, name, email);
   }
   redirect("/dashboard");
 }
@@ -37,16 +36,7 @@ export async function login(formData: FormData) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) redirect(`/login?message=${encodeURIComponent(error.message)}`);
   if (data.user) {
-    const service = createServiceClient();
-    await service.from("profiles").upsert(
-      {
-        id: data.user.id,
-        name: (data.user.user_metadata?.name as string | undefined) || null,
-        email: data.user.email || email,
-        role: "CAPTAIN"
-      },
-      { onConflict: "id" }
-    );
+    await ensureAuthProfile(data.user.id, (data.user.user_metadata?.name as string | undefined) || null, data.user.email || email);
   }
   redirect("/dashboard");
 }
@@ -55,4 +45,19 @@ export async function logout() {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
   redirect("/");
+}
+
+async function ensureAuthProfile(id: string, name: string | null, email: string | null) {
+  const service = createServiceClient();
+  const { data: existing } = await service.from("profiles").select("role,name").eq("id", id).maybeSingle();
+
+  await service.from("profiles").upsert(
+    {
+      id,
+      name: existing?.name || name,
+      email,
+      role: existing?.role || "CAPTAIN"
+    },
+    { onConflict: "id" }
+  );
 }
