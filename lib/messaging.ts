@@ -34,11 +34,16 @@ export function emailBroadcastText(body: string, token: string) {
   return `${body}
 
 --
-You are receiving this because you opted in to Alberta's Voice email updates.
-You can manage your subscription or unsubscribe at any time:
-${manageUrl}
+Alberta's Voice
+Authorized by Alberta's Voice, Referendum Third Party Advertiser.
+Contact: info@albertasvoice.ca
+Website: https://albertasvoice.ca
+TPA/compliance statement: https://albertasvoice.ca/disclaimer
 
-Alberta's Voice`;
+You are receiving this because you opted in to Alberta's Voice email updates.
+Manage your subscription or unsubscribe:
+${manageUrl}
+`;
 }
 
 export async function sendSmsInvite(to: string, body: string) {
