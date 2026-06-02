@@ -20,7 +20,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Set the Supabase, delivery, and Turnstile values in `.env.local`. If Twilio or Resend is not configured, invites are still created and consent links still work.
+Set the Supabase, Resend, and Turnstile values in `.env.local`.
 
 For current Supabase projects, use the API URL plus the new API keys:
 
@@ -51,21 +51,9 @@ RLS is enabled. Captains can see only their own invites/subscribers. Admins can 
 
 For existing databases, also run later migrations in order, especially `202605210004_tighten_captain_rls.sql`, which locks captain visibility to rows tied to their own invite records.
 
-## Twilio Setup
-
-1. Add `TWILIO_ACCOUNT_SID` and `TWILIO_AUTH_TOKEN`.
-2. Set either `TWILIO_MESSAGING_SERVICE_SID` or `TWILIO_FROM_PHONE`.
-3. Configure the inbound messaging webhook to:
-
-```text
-https://your-domain.example/api/twilio/webhook
-```
-
-STOP, STOPALL, UNSUBSCRIBE, CANCEL, END, and QUIT add the phone to `suppression_list`, unsubscribe matching subscribers, mark accepted invites unsubscribed, and log consent events.
-
 ## Cloudflare Deployment
 
-- Use Cloudflare Workers with OpenNext, not static Pages export. This app uses server actions, route handlers, auth cookies, CSV export, and a Twilio webhook.
+- Use Cloudflare Workers with OpenNext, not static Pages export. This app uses server actions, route handlers, auth cookies, and CSV export.
 - Install dependencies, then preview the Worker runtime locally:
 
 ```bash
@@ -80,27 +68,26 @@ pnpm wrangler login
 pnpm run deploy:cf
 ```
 
-- Add production secrets in Cloudflare Workers settings or with Wrangler:
+- Add these production plaintext variables in the Cloudflare Worker dashboard:
+
+```text
+NEXT_PUBLIC_APP_URL=https://join.albertasvoice.ca
+NEXT_PUBLIC_SUPABASE_URL=https://rijwptnrichseefmifjm.supabase.co
+INVITE_FROM_EMAIL=Alberta's Voice <invites@albertasvoice.ca>
+BROADCAST_FROM_EMAIL=Alberta's Voice <updates@albertasvoice.ca>
+```
+
+- Add these production secrets in the Cloudflare Worker dashboard or with Wrangler:
 
 ```bash
-pnpm wrangler secret put NEXT_PUBLIC_APP_URL
-pnpm wrangler secret put NEXT_PUBLIC_SUPABASE_URL
 pnpm wrangler secret put NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 pnpm wrangler secret put SUPABASE_SECRET_KEY
-pnpm wrangler secret put TWILIO_ACCOUNT_SID
-pnpm wrangler secret put TWILIO_AUTH_TOKEN
-pnpm wrangler secret put TWILIO_MESSAGING_SERVICE_SID
-pnpm wrangler secret put TWILIO_FROM_PHONE
 pnpm wrangler secret put RESEND_API_KEY
-pnpm wrangler secret put INVITE_FROM_EMAIL
-pnpm wrangler secret put BROADCAST_FROM_EMAIL
 pnpm wrangler secret put NEXT_PUBLIC_TURNSTILE_SITE_KEY
 pnpm wrangler secret put TURNSTILE_SECRET_KEY
 ```
 
-- Set `NEXT_PUBLIC_APP_URL` to your Cloudflare production URL or custom domain.
 - Never expose `SUPABASE_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY` to the browser.
-- Set the Twilio inbound webhook to `https://your-domain.com/api/twilio/webhook`.
 
 ## Email Broadcast Setup
 
