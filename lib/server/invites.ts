@@ -72,12 +72,13 @@ export async function createInviteForCaptain(
     delivery.sms = result && "skipped" in result ? "skipped" : "sent";
   }
   if (normalized_email) {
-    if (process.env.RESEND_API_KEY && (process.env.INVITE_FROM_EMAIL || process.env.BROADCAST_FROM_EMAIL)) {
+    if (process.env.RESEND_API_KEY && process.env.INVITE_FROM_EMAIL) {
       await sendEmail({
         to: normalized_email,
         subject: emailInviteSubject(captainName),
         text: emailInviteText(captainName, data),
-        fromName: `${captainName} on behalf of Alberta's Voice`
+        fromName: `${captainName} on behalf of Alberta's Voice`,
+        fromEmailEnv: "INVITE_FROM_EMAIL"
       });
       delivery.email = "sent";
     } else {
