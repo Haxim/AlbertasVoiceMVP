@@ -75,10 +75,6 @@ export function emailBroadcastHtml(body: string, token: string) {
 
           <tr>
             <td style="padding:40px;">
-              <p style="margin:0 0 12px 0;font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#6b7280;">
-                Stay in the Loop
-              </p>
-
               <div style="font-size:16px;line-height:1.7;color:#374151;">
                 ${messageHtml}
               </div>

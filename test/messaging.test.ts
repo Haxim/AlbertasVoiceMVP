@@ -31,6 +31,7 @@ Hello **supporters**.
     expect(html).toContain("<ul");
     expect(html).toContain('href="https://albertasvoice.ca/disclaimer"');
     expect(html).toContain("https://example.test/subscription/token-123");
+    expect(html).not.toContain("Stay in the Loop");
   });
 
   it("escapes unsupported html in markdown", async () => {

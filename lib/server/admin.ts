@@ -44,7 +44,12 @@ export async function sendEmailBroadcast({
     .eq("email_consent", true)
     .not("email", "is", null)
     .order("created_at", { ascending: true });
-  if (error) throw error;
+  if (error) {
+    if (errorMessage(error).includes("subscription_token")) {
+      throw new Error("Missing subscribers.subscription_token. Run supabase/migrations/202605290001_add_subscription_management_tokens.sql in Supabase.");
+    }
+    throw error;
+  }
 
   const audience = filterSubscribersByPreference(data || [], preference);
   const { data: broadcast, error: broadcastError } = await service
