@@ -25,3 +25,22 @@ export type Invite = {
   accepted_at: string | null;
   declined_at: string | null;
 };
+
+export type Subscriber = {
+  id: string;
+  invite_id: string | null;
+  captain_id: string | null;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  normalized_email: string | null;
+  normalized_phone: string | null;
+  preference: Preference;
+  sms_consent: boolean;
+  email_consent: boolean;
+  consented_at: string | null;
+  unsubscribed_at: string | null;
+  subscription_token: string;
+  created_at: string;
+  updated_at: string;
+};

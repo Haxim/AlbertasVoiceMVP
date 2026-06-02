@@ -76,7 +76,8 @@ export async function createInviteForCaptain(
       await sendEmail({
         to: normalized_email,
         subject: emailInviteSubject(captainName),
-        text: emailInviteText(captainName, data)
+        text: emailInviteText(captainName, data),
+        fromName: `${captainName} on behalf of Alberta's Voice`
       });
       delivery.email = "sent";
     } else {

@@ -1,6 +1,8 @@
+import { runtimeEnv } from "@/lib/runtime-env";
+
 export async function verifyTurnstileToken(token: FormDataEntryValue | null, remoteIp?: string | null) {
-  const secret = process.env.TURNSTILE_SECRET_KEY;
-  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+  const secret = await runtimeEnv("TURNSTILE_SECRET_KEY");
+  const siteKey = await runtimeEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY");
 
   if (!secret && !siteKey) return;
   if (!secret || !siteKey) {

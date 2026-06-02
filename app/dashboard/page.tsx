@@ -5,6 +5,7 @@ import { getCaptainDashboard } from "@/lib/queries";
 import { getCurrentProfile } from "@/lib/auth";
 import { StatusBadge } from "@/components/status-badge";
 import { Turnstile } from "@/components/turnstile";
+import { runtimeEnv } from "@/lib/runtime-env";
 
 export default async function DashboardPage({
   searchParams
@@ -15,6 +16,7 @@ export default async function DashboardPage({
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
   const dashboard = await getCaptainDashboard(profile.id);
+  const turnstileSiteKey = await runtimeEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY");
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
@@ -55,7 +57,7 @@ export default async function DashboardPage({
             This sends only an invitation. The recipient is not subscribed until they choose an option and check the
             consent box.
           </p>
-          <Turnstile />
+          <Turnstile siteKey={turnstileSiteKey} />
           <button className="focus-ring w-full rounded-md bg-spruce px-4 py-3 font-semibold text-white">Send invite</button>
         </form>
 

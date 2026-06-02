@@ -3,6 +3,7 @@ import { adminExportSubscribers, previewBroadcastAudience, sendEmailBroadcast } 
 import { getCurrentProfile, requireAdmin } from "@/lib/auth";
 import { getAdminCounts } from "@/lib/queries";
 import { Turnstile } from "@/components/turnstile";
+import { runtimeEnv } from "@/lib/runtime-env";
 
 export default async function AdminPage({
   searchParams
@@ -14,6 +15,7 @@ export default async function AdminPage({
   if (!profile) redirect("/login");
   await requireAdmin(profile);
   const counts = await getAdminCounts();
+  const turnstileSiteKey = await runtimeEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY");
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
@@ -48,7 +50,7 @@ export default async function AdminPage({
             <input name="subject" required className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
           </label>
           <label className="block">
-            <span className="text-sm font-medium">Message</span>
+            <span className="text-sm font-medium">Message (Markdown)</span>
             <textarea name="body" rows={8} required className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
           </label>
           <label className="flex items-start gap-3 rounded-md bg-field p-4 text-sm leading-6">
@@ -57,7 +59,7 @@ export default async function AdminPage({
               Send only to opted-in, non-unsubscribed subscribers matching this preference. I have reviewed the message.
             </span>
           </label>
-          <Turnstile />
+          <Turnstile siteKey={turnstileSiteKey} />
           <button className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white">Send email</button>
         </form>
       </section>
