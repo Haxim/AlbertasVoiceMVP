@@ -5,18 +5,20 @@ export async function sendEmail({
   subject,
   text,
   html,
-  fromName = "Alberta's Voice"
+  fromName = "Alberta's Voice",
+  fromEmailEnv
 }: {
   to: string;
   subject: string;
   text: string;
   html?: string;
   fromName?: string;
+  fromEmailEnv: "BROADCAST_FROM_EMAIL" | "INVITE_FROM_EMAIL";
 }) {
   const apiKey = await runtimeEnv("RESEND_API_KEY");
-  const fromEmail = (await runtimeEnv("BROADCAST_FROM_EMAIL")) || (await runtimeEnv("INVITE_FROM_EMAIL"));
+  const fromEmail = await runtimeEnv(fromEmailEnv);
   if (!apiKey) throw new Error("RESEND_API_KEY is not configured.");
-  if (!fromEmail) throw new Error("BROADCAST_FROM_EMAIL or INVITE_FROM_EMAIL is required.");
+  if (!fromEmail) throw new Error(`${fromEmailEnv} is required.`);
 
   const from = formatSender(fromEmail, fromName);
 

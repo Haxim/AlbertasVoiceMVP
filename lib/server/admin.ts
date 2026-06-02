@@ -75,7 +75,8 @@ export async function sendEmailBroadcast({
         subject,
         text: emailBroadcastText(body, subscriber.subscription_token),
         html: emailBroadcastHtml(body, subscriber.subscription_token),
-        fromName: senderNameForSubscriber(subscriber)
+        fromName: senderNameForSubscriber(subscriber),
+        fromEmailEnv: "BROADCAST_FROM_EMAIL"
       });
       await service.from("broadcast_deliveries").insert({
         broadcast_id: broadcast.id,
