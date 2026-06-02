@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
-import { adminExportSubscribers, previewBroadcastAudience, sendEmailBroadcast } from "@/lib/actions/admin";
+import { adminExportSubscribers, previewBroadcastAudience, resumeEmailBroadcast, sendEmailBroadcast } from "@/lib/actions/admin";
 import { getCurrentProfile, requireAdmin } from "@/lib/auth";
 import { getAdminCounts } from "@/lib/queries";
 import { Turnstile } from "@/components/turnstile";
 import { runtimeEnv } from "@/lib/runtime-env";
+import { getIncompleteEmailBroadcasts } from "@/lib/server/admin";
 
 export default async function AdminPage({
   searchParams
@@ -16,6 +17,7 @@ export default async function AdminPage({
   await requireAdmin(profile);
   const counts = await getAdminCounts();
   const turnstileSiteKey = await runtimeEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY");
+  const incompleteBroadcasts = await getIncompleteEmailBroadcasts();
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
@@ -63,6 +65,35 @@ export default async function AdminPage({
           <button className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white">Send email</button>
         </form>
       </section>
+      {incompleteBroadcasts.length ? (
+        <section className="mt-8 rounded-lg border border-line bg-white p-5">
+          <h2 className="text-xl font-semibold">Resume email broadcasts</h2>
+          <p className="mt-2 text-sm leading-6 text-ink/70">
+            Broadcasts are sent in batches of up to 100 to stay within Worker limits. Already recorded deliveries are skipped.
+          </p>
+          <div className="mt-4 space-y-4">
+            {incompleteBroadcasts.map((broadcast) => (
+              <form key={broadcast.id} action={resumeEmailBroadcast} className="rounded-md bg-field p-4">
+                <input type="hidden" name="broadcastId" value={broadcast.id} />
+                <p className="font-semibold">{broadcast.subject}</p>
+                <p className="mt-1 text-sm text-ink/70">
+                  {broadcast.sentCount} sent, {broadcast.remainingCount} remaining
+                </p>
+                <a
+                  href={`/api/admin/broadcasts/${broadcast.id}/remaining`}
+                  className="focus-ring mt-3 inline-block text-sm font-semibold text-spruce underline"
+                >
+                  Download remaining recipients CSV
+                </a>
+                <Turnstile siteKey={turnstileSiteKey} />
+                <button className="focus-ring mt-3 rounded-md bg-spruce px-4 py-2 font-semibold text-white">
+                  Send next batch
+                </button>
+              </form>
+            ))}
+          </div>
+        </section>
+      ) : null}
       <p className="mt-6 text-sm leading-6 text-ink/65">
         SMS broadcast remains intentionally disabled until final message templates and opt-out language are approved.
       </p>

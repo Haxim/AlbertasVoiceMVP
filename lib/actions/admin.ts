@@ -4,7 +4,11 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { emailBroadcastSchema, preferenceFilterSchema } from "@/lib/validation";
-import { previewAudienceCount, sendEmailBroadcast as sendEmailBroadcastServer } from "@/lib/server/admin";
+import {
+  previewAudienceCount,
+  resumeEmailBroadcast as resumeEmailBroadcastServer,
+  sendEmailBroadcast as sendEmailBroadcastServer
+} from "@/lib/server/admin";
 import { getRequestIp, verifyTurnstileToken } from "@/lib/turnstile";
 
 export async function previewBroadcastAudience(formData: FormData) {
@@ -42,11 +46,30 @@ export async function sendEmailBroadcast(formData: FormData) {
       subject: parsed.data.subject,
       body: parsed.data.body
     });
-    message = `Email sent to ${result.audienceCount} subscribers. ${result.failed} failed.`;
+    message = batchResultMessage(result);
   } catch (error) {
     redirect(`/admin?error=${encodeURIComponent(errorMessage(error, "Email broadcast failed."))}`);
   }
   redirect(`/admin?message=${encodeURIComponent(message)}`);
+}
+
+export async function resumeEmailBroadcast(formData: FormData) {
+  await requireAdmin();
+  const h = await headers();
+  const broadcastId = String(formData.get("broadcastId") || "");
+  if (!/^[0-9a-f-]{36}$/i.test(broadcastId)) redirect("/admin?error=Invalid%20broadcast.");
+
+  try {
+    await verifyTurnstileToken(formData.get("cf-turnstile-response"), getRequestIp(h));
+    const result = await resumeEmailBroadcastServer(broadcastId);
+    redirect(`/admin?message=${encodeURIComponent(batchResultMessage(result))}`);
+  } catch (error) {
+    redirect(`/admin?error=${encodeURIComponent(errorMessage(error, "Email broadcast resume failed."))}`);
+  }
+}
+
+function batchResultMessage(result: { sent: number; failed: number; remaining: number }) {
+  return `Processed email batch: ${result.sent} sent, ${result.failed} failed, ${result.remaining} remaining.`;
 }
 
 function errorMessage(error: unknown, fallback: string) {

@@ -1,8 +1,11 @@
+import crypto from "node:crypto";
 import { createServiceClient } from "@/lib/supabase/server";
-import { sendEmail } from "@/lib/email";
+import { sendEmailBatch } from "@/lib/email";
 import { emailBroadcastHtml, emailBroadcastText } from "@/lib/messaging";
 import { filterSubscribersByPreference } from "@/lib/rules";
 import type { PreferenceFilter, Profile } from "@/lib/types";
+
+const EMAIL_BROADCAST_BATCH_SIZE = 100;
 
 export async function previewAudienceCount(preference: PreferenceFilter) {
   const service = createServiceClient();
@@ -38,20 +41,7 @@ export async function sendEmailBroadcast({
   body: string;
 }) {
   const service = createServiceClient();
-  const { data, error } = await service
-    .from("subscribers")
-    .select("id,name,email,preference,email_consent,unsubscribed_at,subscription_token,profiles:captain_id(name)")
-    .eq("email_consent", true)
-    .not("email", "is", null)
-    .order("created_at", { ascending: true });
-  if (error) {
-    if (errorMessage(error).includes("subscription_token")) {
-      throw new Error("Missing subscribers.subscription_token. Run supabase/migrations/202605290001_add_subscription_management_tokens.sql in Supabase.");
-    }
-    throw error;
-  }
-
-  const audience = filterSubscribersByPreference(data || [], preference);
+  const audience = await getEmailAudience(preference);
   const { data: broadcast, error: broadcastError } = await service
     .from("broadcasts")
     .insert({
@@ -67,46 +57,155 @@ export async function sendEmailBroadcast({
     .single();
   if (broadcastError) throw broadcastError;
 
+  return processEmailBroadcastBatch(broadcast.id);
+}
+
+export async function resumeEmailBroadcast(broadcastId: string) {
+  return processEmailBroadcastBatch(broadcastId);
+}
+
+export async function getIncompleteEmailBroadcasts() {
+  const service = createServiceClient();
+  const { data: broadcasts, error } = await service
+    .from("broadcasts")
+    .select("id,subject,preference_filter,audience_count,status,created_at")
+    .eq("channel", "EMAIL")
+    .in("status", ["DRAFT", "FAILED"])
+    .order("created_at", { ascending: false })
+    .limit(5);
+  if (error) throw error;
+
+  return Promise.all(
+    (broadcasts || []).map(async (broadcast) => {
+      const progress = await getEmailBroadcastProgress(broadcast.id, broadcast.preference_filter);
+      return {
+        ...broadcast,
+        sentCount: progress.sentCount,
+        remainingCount: progress.pending.length
+      };
+    })
+  );
+}
+
+export async function exportPendingEmailBroadcastCsv(broadcastId: string) {
+  const service = createServiceClient();
+  const { data: broadcast, error } = await service
+    .from("broadcasts")
+    .select("preference_filter")
+    .eq("id", broadcastId)
+    .eq("channel", "EMAIL")
+    .single();
+  if (error) throw error;
+
+  const { pending: rows } = await getEmailBroadcastProgress(broadcastId, broadcast.preference_filter);
+  const header = ["name", "email", "preference"].join(",");
+  const body = rows.map((row) => [row.name, row.email, row.preference].map(csvCell).join(","));
+  return [header, ...body].join("\n");
+}
+
+async function processEmailBroadcastBatch(broadcastId: string) {
+  const service = createServiceClient();
+  const { data: broadcast, error: broadcastError } = await service
+    .from("broadcasts")
+    .select("id,subject,body,preference_filter")
+    .eq("id", broadcastId)
+    .eq("channel", "EMAIL")
+    .single();
+  if (broadcastError) throw broadcastError;
+
+  const { pending } = await getEmailBroadcastProgress(broadcast.id, broadcast.preference_filter);
+  const batch = pending.slice(0, EMAIL_BROADCAST_BATCH_SIZE);
   let failed = 0;
-  for (const subscriber of audience) {
+  let sent = 0;
+  if (batch.length) {
     try {
-      const providerMessageId = await sendEmail({
-        to: subscriber.email,
-        subject,
-        text: emailBroadcastText(body, subscriber.subscription_token),
-        html: emailBroadcastHtml(body, subscriber.subscription_token),
-        fromName: senderNameForSubscriber(subscriber),
-        fromEmailEnv: "BROADCAST_FROM_EMAIL"
+      const providerMessageIds = await sendEmailBatch({
+        emails: batch.map((subscriber) => ({
+          to: subscriber.email,
+          subject: broadcast.subject,
+          text: emailBroadcastText(broadcast.body, subscriber.subscription_token),
+          html: emailBroadcastHtml(broadcast.body, subscriber.subscription_token),
+          fromName: senderNameForSubscriber(subscriber)
+        })),
+        fromEmailEnv: "BROADCAST_FROM_EMAIL",
+        idempotencyKey: emailBatchIdempotencyKey(broadcast.id, batch)
       });
-      await service.from("broadcast_deliveries").insert({
-        broadcast_id: broadcast.id,
-        subscriber_id: subscriber.id,
-        channel: "EMAIL",
-        provider_message_id: providerMessageId,
-        status: "SENT"
-      });
+      await service.from("broadcast_deliveries").insert(
+        batch.map((subscriber, index) => ({
+          broadcast_id: broadcast.id,
+          subscriber_id: subscriber.id,
+          channel: "EMAIL",
+          provider_message_id: providerMessageIds[index],
+          status: "SENT"
+        }))
+      );
+      sent = batch.length;
     } catch (error) {
-      failed += 1;
-      await service.from("broadcast_deliveries").insert({
-        broadcast_id: broadcast.id,
-        subscriber_id: subscriber.id,
-        channel: "EMAIL",
-        status: "FAILED",
-        error: errorMessage(error)
-      });
+      failed = batch.length;
+      await service.from("broadcast_deliveries").insert(
+        batch.map((subscriber) => ({
+          broadcast_id: broadcast.id,
+          subscriber_id: subscriber.id,
+          channel: "EMAIL",
+          status: "FAILED",
+          error: errorMessage(error)
+        }))
+      );
     }
   }
 
+  const remaining = pending.length - sent;
   const { error: updateError } = await service
     .from("broadcasts")
     .update({
-      status: failed > 0 ? "FAILED" : "SENT",
-      sent_at: new Date().toISOString()
+      status: remaining > 0 ? "DRAFT" : "SENT",
+      sent_at: remaining > 0 ? null : new Date().toISOString()
     })
     .eq("id", broadcast.id);
   if (updateError) throw updateError;
 
-  return { audienceCount: audience.length, failed };
+  return { broadcastId: broadcast.id, sent, failed, remaining };
+}
+
+async function getEmailAudience(preference: PreferenceFilter) {
+  const service = createServiceClient();
+  const { data, error } = await service
+    .from("subscribers")
+    .select("id,name,email,preference,email_consent,unsubscribed_at,subscription_token,profiles:captain_id(name)")
+    .eq("email_consent", true)
+    .not("email", "is", null)
+    .order("created_at", { ascending: true });
+  if (error) {
+    if (errorMessage(error).includes("subscription_token")) {
+      throw new Error("Missing subscribers.subscription_token. Run supabase/migrations/202605290001_add_subscription_management_tokens.sql in Supabase.");
+    }
+    throw error;
+  }
+  return filterSubscribersByPreference(data || [], preference);
+}
+
+async function getSentSubscriberIds(broadcastId: string) {
+  const service = createServiceClient();
+  const { data, error } = await service
+    .from("broadcast_deliveries")
+    .select("subscriber_id")
+    .eq("broadcast_id", broadcastId)
+    .eq("status", "SENT");
+  if (error) throw error;
+  return new Set((data || []).map((delivery) => delivery.subscriber_id));
+}
+
+async function getEmailBroadcastProgress(broadcastId: string, preference: PreferenceFilter) {
+  const [audience, sentSubscriberIds] = await Promise.all([getEmailAudience(preference), getSentSubscriberIds(broadcastId)]);
+  return {
+    pending: audience.filter((subscriber) => !sentSubscriberIds.has(subscriber.id)),
+    sentCount: sentSubscriberIds.size
+  };
+}
+
+function emailBatchIdempotencyKey(broadcastId: string, batch: Array<{ id: string }>) {
+  const subscriberHash = crypto.createHash("sha256").update(batch.map((subscriber) => subscriber.id).join(",")).digest("hex");
+  return `broadcast/${broadcastId}/batch/${subscriberHash}`;
 }
 
 function csvCell(value: unknown) {
