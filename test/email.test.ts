@@ -8,7 +8,7 @@ vi.mock("@/lib/runtime-env", () => ({
   runtimeEnv: runtimeEnvMock
 }));
 
-import { sendEmail } from "@/lib/email";
+import { sendEmail, sendEmailBatch } from "@/lib/email";
 
 describe("sendEmail", () => {
   beforeEach(() => {
@@ -50,5 +50,41 @@ describe("sendEmail", () => {
     const [, init] = vi.mocked(fetch).mock.calls[0];
     const payload = JSON.parse(String(init?.body));
     expect(payload.from).toBe("\"Alberta's Voice\" <invite@example.test>");
+  });
+
+  it("passes an idempotency key to Resend when provided", async () => {
+    await sendEmail({
+      to: "subscriber@example.test",
+      subject: "Campaign update",
+      text: "Hello",
+      fromEmailEnv: "BROADCAST_FROM_EMAIL",
+      idempotencyKey: "broadcast/example/subscriber/example"
+    });
+
+    const [, init] = vi.mocked(fetch).mock.calls[0];
+    expect(new Headers(init?.headers).get("idempotency-key")).toBe("broadcast/example/subscriber/example");
+  });
+
+  it("sends a personalized batch with an idempotency key", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify({ data: [{ id: "email-1" }, { id: "email-2" }] }), { status: 200 }))
+    );
+
+    const ids = await sendEmailBatch({
+      emails: [
+        { to: "one@example.test", subject: "Update", text: "Hello one", fromName: "Captain One" },
+        { to: "two@example.test", subject: "Update", text: "Hello two", fromName: "Captain Two" }
+      ],
+      fromEmailEnv: "BROADCAST_FROM_EMAIL",
+      idempotencyKey: "broadcast/example/batch/example"
+    });
+
+    const [url, init] = vi.mocked(fetch).mock.calls[0];
+    const payload = JSON.parse(String(init?.body));
+    expect(url).toBe("https://api.resend.com/emails/batch");
+    expect(new Headers(init?.headers).get("idempotency-key")).toBe("broadcast/example/batch/example");
+    expect(payload[0].from).toBe('"Captain One" <broadcast@example.test>');
+    expect(ids).toEqual(["email-1", "email-2"]);
   });
 });
