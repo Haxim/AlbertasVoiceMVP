@@ -35,7 +35,7 @@ export async function createInviteForCaptain(
     throw new Error("This contact cannot be invited.");
   }
   if (hasDuplicateActiveContact({ normalized_email, normalized_phone }, inviteMatches, subscriberMatches)) {
-    throw new Error("An active invite or subscriber already exists for this contact.");
+    throw new Error("Someone has already invited that contact.");
   }
 
   const token = crypto.randomBytes(24).toString("base64url");
