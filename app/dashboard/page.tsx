@@ -51,7 +51,7 @@ export default async function DashboardPage({
           </label>
           <label className="flex gap-3 rounded-md border border-line bg-field/40 p-3 text-sm leading-6">
             <input name="nameUseConsent" type="checkbox" value="yes" required className="mt-1 h-4 w-4 rounded border-line" />
-            <span>I allow Alberta&apos;s Voice to use my name con communication with this recipient</span>
+            <span>I allow Alberta&apos;s Voice to use my name on communications with this recipient</span>
           </label>
           <p className="text-sm leading-6 text-ink/70">
             This sends only an invitation. The recipient is not subscribed until they choose an option and check the
