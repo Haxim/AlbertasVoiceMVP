@@ -29,6 +29,24 @@ ${inviteUrl(invite.token)}
 If you do not want updates, you can decline from that page.`;
 }
 
+export function emailInviteHtml(captainName: string, invite: Pick<Invite, "invitee_name" | "token">) {
+  const invitationUrl = inviteUrl(invite.token);
+  const body = `Hi ${invite.invitee_name},
+
+${captainName} invited you to choose whether to receive Alberta's Voice updates.
+
+You are not subscribed unless you opt in. Review the invitation and choose your preference from that page.
+
+If you do not want updates, you can decline from that page.`;
+
+  return renderAlbertaVoiceEmail({
+    body,
+    ctaUrl: invitationUrl,
+    ctaLabel: "Review Invitation",
+    notice: "You are receiving this one-time invitation from Alberta's Voice. You are not subscribed unless you opt in."
+  });
+}
+
 export function emailBroadcastText(body: string, token: string) {
   const manageUrl = subscriptionUrl(token);
   return `${body}
@@ -48,6 +66,25 @@ ${manageUrl}
 
 export function emailBroadcastHtml(body: string, token: string) {
   const manageUrl = subscriptionUrl(token);
+  return renderAlbertaVoiceEmail({
+    body,
+    ctaUrl: manageUrl,
+    ctaLabel: "Manage Email Preferences",
+    notice: "You are receiving this because you opted in to Alberta's Voice email updates."
+  });
+}
+
+function renderAlbertaVoiceEmail({
+  body,
+  ctaUrl,
+  ctaLabel,
+  notice
+}: {
+  body: string;
+  ctaUrl: string;
+  ctaLabel: string;
+  notice: string;
+}) {
   const messageHtml = markdownToEmailHtml(body);
   return `<!DOCTYPE html>
 <html lang="en">
@@ -82,15 +119,15 @@ export function emailBroadcastHtml(body: string, token: string) {
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:40px auto;">
                 <tr>
                   <td align="center" bgcolor="#c8102e" style="border-radius:8px;">
-                    <a href="${escapeHtml(manageUrl)}" style="display:inline-block;padding:16px 32px;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;">
-                      Manage Email Preferences
+                    <a href="${escapeHtml(ctaUrl)}" style="display:inline-block;padding:16px 32px;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;">
+                      ${escapeHtml(ctaLabel)}
                     </a>
                   </td>
                 </tr>
               </table>
 
               <p style="margin:0 0 16px 0;font-size:14px;line-height:1.6;color:#6b7280;">
-                You are receiving this because you opted in to Alberta's Voice email updates.
+                ${escapeHtml(notice)}
               </p>
 
               <p style="margin:0;font-size:14px;line-height:1.6;color:#6b7280;">
