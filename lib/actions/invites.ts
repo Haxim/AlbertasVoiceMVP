@@ -13,7 +13,7 @@ export async function createInvite(formData: FormData) {
   const parsed = createInviteSchema.safeParse({
     inviteeName: formData.get("inviteeName"),
     email: formData.get("email"),
-    phone: formData.get("phone")
+    nameUseConsent: formData.get("nameUseConsent")
   });
   if (!parsed.success) redirect(`/dashboard?error=${encodeURIComponent(parsed.error.issues[0]?.message || "Invalid invite.")}`);
   let message = "Invite created.";

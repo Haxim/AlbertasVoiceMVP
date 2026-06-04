@@ -4,11 +4,12 @@ export const createInviteSchema = z
   .object({
     inviteeName: z.string().trim().min(1).max(120),
     email: z.string().trim().email().optional().or(z.literal("")),
-    phone: z.string().trim().min(7).max(40).optional().or(z.literal(""))
+    phone: z.string().trim().min(7).max(40).optional().or(z.literal("")),
+    nameUseConsent: z.literal("yes")
   })
-  .refine((data) => Boolean(data.email || data.phone), {
-    message: "Add a phone number or email.",
-    path: ["phone"]
+  .refine((data) => Boolean(data.email), {
+    message: "Add an email.",
+    path: ["email"]
   });
 
 export const acceptInviteSchema = z.object({

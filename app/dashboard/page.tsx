@@ -38,7 +38,7 @@ export default async function DashboardPage({
 
       <section className="mt-8 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <form action={createInvite} className="space-y-4 rounded-lg border border-line bg-white p-5">
-          <h2 className="text-xl font-semibold">Send one consent invite</h2>
+          <h2 className="text-xl font-semibold">Invite a friend</h2>
           {params?.message ? <p className="rounded-md bg-field p-3 text-sm">{params.message}</p> : null}
           {params?.error ? <p className="rounded-md bg-rose/10 p-3 text-sm text-rose">{params.error}</p> : null}
           <label className="block">
@@ -46,12 +46,12 @@ export default async function DashboardPage({
             <input name="inviteeName" required className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
           </label>
           <label className="block">
-            <span className="text-sm font-medium">Phone</span>
-            <input name="phone" inputMode="tel" placeholder="+1 780 555 0100" className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
-          </label>
-          <label className="block">
             <span className="text-sm font-medium">Email</span>
-            <input name="email" type="email" className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
+            <input name="email" type="email" required className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
+          </label>
+          <label className="flex gap-3 rounded-md border border-line bg-field/40 p-3 text-sm leading-6">
+            <input name="nameUseConsent" type="checkbox" value="yes" required className="mt-1 h-4 w-4 rounded border-line" />
+            <span>I allow Alberta&apos;s Voice to use my name con communication with this recipient</span>
           </label>
           <p className="text-sm leading-6 text-ink/70">
             This sends only an invitation. The recipient is not subscribed until they choose an option and check the
