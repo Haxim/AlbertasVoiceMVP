@@ -223,15 +223,21 @@ function senderNameForSubscriber(subscriber: { profiles?: { name?: string | null
 
 export function personalizeBroadcastBody(
   body: string,
-  subscriber: { profiles?: { name?: string | null } | Array<{ name?: string | null }> | null }
+  subscriber: { name?: string | null; profiles?: { name?: string | null } | Array<{ name?: string | null }> | null }
 ) {
-  return body.replace(/\[captain\]/g, captainNameForSubscriber(subscriber));
+  return body
+    .replace(/\[captain\]/g, captainNameForSubscriber(subscriber))
+    .replace(/\[name\]/g, subscriberNameForSubscriber(subscriber));
 }
 
 function captainNameForSubscriber(subscriber: { profiles?: { name?: string | null } | Array<{ name?: string | null }> | null }) {
   const profile = Array.isArray(subscriber.profiles) ? subscriber.profiles[0] : subscriber.profiles;
   const captainName = profile?.name?.trim();
   return captainName || "Alberta's Voice";
+}
+
+function subscriberNameForSubscriber(subscriber: { name?: string | null }) {
+  return subscriber.name?.trim() || "friend";
 }
 
 function errorMessage(error: unknown) {

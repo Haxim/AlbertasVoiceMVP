@@ -52,8 +52,9 @@ export default async function AdminPage({
             <input name="subject" required className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
           </label>
           <label className="block">
-            <span className="text-sm font-medium">
-              Message (Markdown). Use [captain] to insert the recipient&apos;s captain name.
+            <span className="text-sm font-medium">Message (Markdown)</span>
+            <span className="mt-1 block text-xs leading-5 text-ink/60">
+              Supports Markdown. Use [captain] for the recipient&apos;s captain name and [name] for the subscriber name.
             </span>
             <textarea name="body" rows={8} required className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
           </label>
