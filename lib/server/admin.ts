@@ -120,13 +120,16 @@ async function processEmailBroadcastBatch(broadcastId: string) {
   if (batch.length) {
     try {
       const providerMessageIds = await sendEmailBatch({
-        emails: batch.map((subscriber) => ({
-          to: subscriber.email,
-          subject: broadcast.subject,
-          text: emailBroadcastText(broadcast.body, subscriber.subscription_token),
-          html: emailBroadcastHtml(broadcast.body, subscriber.subscription_token),
-          fromName: senderNameForSubscriber(subscriber)
-        })),
+        emails: batch.map((subscriber) => {
+          const body = personalizeBroadcastBody(broadcast.body, subscriber);
+          return {
+            to: subscriber.email,
+            subject: broadcast.subject,
+            text: emailBroadcastText(body, subscriber.subscription_token),
+            html: emailBroadcastHtml(body, subscriber.subscription_token),
+            fromName: senderNameForSubscriber(subscriber)
+          };
+        }),
         fromEmailEnv: "BROADCAST_FROM_EMAIL",
         idempotencyKey: emailBatchIdempotencyKey(broadcast.id, batch)
       });
@@ -214,9 +217,27 @@ function csvCell(value: unknown) {
 }
 
 function senderNameForSubscriber(subscriber: { profiles?: { name?: string | null } | Array<{ name?: string | null }> | null }) {
+  const captainName = captainNameForSubscriber(subscriber);
+  return captainName !== "Alberta's Voice" ? `${captainName} on behalf of Alberta's Voice` : "Alberta's Voice";
+}
+
+export function personalizeBroadcastBody(
+  body: string,
+  subscriber: { name?: string | null; profiles?: { name?: string | null } | Array<{ name?: string | null }> | null }
+) {
+  return body
+    .replace(/\[captain\]/g, captainNameForSubscriber(subscriber))
+    .replace(/\[name\]/g, subscriberNameForSubscriber(subscriber));
+}
+
+function captainNameForSubscriber(subscriber: { profiles?: { name?: string | null } | Array<{ name?: string | null }> | null }) {
   const profile = Array.isArray(subscriber.profiles) ? subscriber.profiles[0] : subscriber.profiles;
   const captainName = profile?.name?.trim();
-  return captainName ? `${captainName} on behalf of Alberta's Voice` : "Alberta's Voice";
+  return captainName || "Alberta's Voice";
+}
+
+function subscriberNameForSubscriber(subscriber: { name?: string | null }) {
+  return subscriber.name?.trim() || "friend";
 }
 
 function errorMessage(error: unknown) {

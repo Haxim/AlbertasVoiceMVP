@@ -23,7 +23,7 @@ export default async function SignupPage({
           <input name="email" type="email" required className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
         </label>
         <label className="block">
-          <span className="text-sm font-medium">Password</span>
+          <span className="text-sm font-medium">Create password</span>
           <input name="password" type="password" minLength={8} required className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
         </label>
         <Turnstile siteKey={turnstileSiteKey} />

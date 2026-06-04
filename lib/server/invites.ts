@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { createServiceClient } from "@/lib/supabase/server";
 import { normalizeEmail, normalizePhone } from "@/lib/normalization";
 import { hasDuplicateActiveContact, isSuppressed } from "@/lib/rules";
-import { emailInviteSubject, emailInviteText, smsInviteText, sendSmsInvite } from "@/lib/messaging";
+import { emailInviteHtml, emailInviteSubject, emailInviteText, smsInviteText, sendSmsInvite } from "@/lib/messaging";
 import { sendEmail } from "@/lib/email";
 import type { Preference, Profile } from "@/lib/types";
 
@@ -35,7 +35,7 @@ export async function createInviteForCaptain(
     throw new Error("This contact cannot be invited.");
   }
   if (hasDuplicateActiveContact({ normalized_email, normalized_phone }, inviteMatches, subscriberMatches)) {
-    throw new Error("An active invite or subscriber already exists for this contact.");
+    throw new Error("Someone has already invited that contact.");
   }
 
   const token = crypto.randomBytes(24).toString("base64url");
@@ -77,6 +77,7 @@ export async function createInviteForCaptain(
         to: normalized_email,
         subject: emailInviteSubject(captainName),
         text: emailInviteText(captainName, data),
+        html: emailInviteHtml(captainName, data),
         fromName: `${captainName} on behalf of Alberta's Voice`,
         fromEmailEnv: "INVITE_FROM_EMAIL"
       });

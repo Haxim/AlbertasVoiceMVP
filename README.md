@@ -83,6 +83,7 @@ BROADCAST_FROM_EMAIL=Alberta's Voice <updates@albertasvoice.ca>
 pnpm wrangler secret put NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 pnpm wrangler secret put SUPABASE_SECRET_KEY
 pnpm wrangler secret put RESEND_API_KEY
+pnpm wrangler secret put TWILIO_AUTH_TOKEN
 pnpm wrangler secret put NEXT_PUBLIC_TURNSTILE_SITE_KEY
 pnpm wrangler secret put TURNSTILE_SECRET_KEY
 ```
@@ -126,5 +127,4 @@ Tests cover duplicate invite prevention, invite acceptance consent validation, p
 
 ## Shipping TODOs
 
-- Add Twilio request-signature verification before public launch if the webhook is exposed beyond Twilio.
 - Add a richer broadcast approval workflow after the first MVP validates consent capture and referral flow.

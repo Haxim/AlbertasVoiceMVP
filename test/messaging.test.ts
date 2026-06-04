@@ -43,3 +43,24 @@ Hello **supporters**.
     expect(html).toContain("&lt;script&gt;");
   });
 });
+
+describe("email invite html", () => {
+  it("uses the Alberta's Voice email template with an invitation CTA", async () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://example.test");
+    const { emailInviteHtml } = await import("@/lib/messaging");
+
+    const html = emailInviteHtml("Captain One", {
+      invitee_name: "Friend <Name>",
+      token: "invite-token-123"
+    });
+
+    expect(html).toContain("https://albertasvoice.ca/assets/logo-email.png");
+    expect(html).toContain("Captain One invited you");
+    expect(html).toContain("Friend &lt;Name&gt;");
+    expect(html).toContain("Review Invitation");
+    expect(html).toContain("https://example.test/invite/invite-token-123");
+    expect(html).toContain("You are not subscribed unless you opt in.");
+    expect(html).not.toContain("Manage Email Preferences");
+    expect(html).not.toContain("You are receiving this because you opted in");
+  });
+});
