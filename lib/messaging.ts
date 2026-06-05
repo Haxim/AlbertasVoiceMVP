@@ -15,29 +15,37 @@ export function smsInviteText(captainName: string, invite: Pick<Invite, "token">
 }
 
 export function emailInviteSubject(captainName: string) {
-  return `${captainName} invited you to Alberta's Voice`;
+  return `${captainName} invited you to learn more about Alberta's Voice`;
 }
 
 export function emailInviteText(captainName: string, invite: Pick<Invite, "invitee_name" | "token">) {
   return `Hi ${invite.invitee_name},
 
-${captainName} invited you to choose whether to receive Alberta's Voice updates.
+${captainName} thought you might be interested in learning more about Alberta's Voice.
 
-You are not subscribed unless you opt in. Review the invitation and choose your preference here:
+Alberta's Voice is a grassroots campaign working to keep Alberta in Canada and encourage Albertans to vote No on the nine referendum questions. We share information, connect supporters, and help Albertans take action in support of Alberta's future within Canada.
+
+You are not subscribed to Alberta's Voice updates. To learn more and choose whether you'd like to receive future emails, visit:
 ${inviteUrl(invite.token)}
 
-If you do not want updates, you can decline from that page.`;
+If you'd prefer not to hear from us, you can decline the invitation from that page and you will not receive further communications.
+
+Thank you for taking a moment to learn more about Alberta's Voice.`;
 }
 
 export function emailInviteHtml(captainName: string, invite: Pick<Invite, "invitee_name" | "token">) {
   const invitationUrl = inviteUrl(invite.token);
   const body = `Hi ${invite.invitee_name},
 
-${captainName} invited you to choose whether to receive Alberta's Voice updates.
+${captainName} thought you might be interested in learning more about Alberta's Voice.
 
-You are not subscribed unless you opt in. Review the invitation and choose your preference from that page.
+Alberta's Voice is a grassroots campaign working to keep Alberta in Canada and encourage Albertans to vote No on the nine referendum questions. We share information, connect supporters, and help Albertans take action in support of Alberta's future within Canada.
 
-If you do not want updates, you can decline from that page.`;
+You are not subscribed to Alberta's Voice updates. To learn more and choose whether you'd like to receive future emails, visit:
+
+If you'd prefer not to hear from us, you can decline the invitation from that page and you will not receive further communications.
+
+Thank you for taking a moment to learn more about Alberta's Voice.`;
 
   return renderAlbertaVoiceEmail({
     body,
