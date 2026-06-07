@@ -8,6 +8,7 @@ export type Profile = {
   id: string;
   name: string | null;
   email: string | null;
+  captain_email_alias?: string | null;
   role: Role;
   created_at: string;
 };

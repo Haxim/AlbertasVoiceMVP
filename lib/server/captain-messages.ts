@@ -5,6 +5,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
 
 const CAPTAIN_MESSAGE_BATCH_SIZE = 100;
+const CAPTAIN_REPLY_DOMAIN = "join.albertasvoice.ca";
 
 type CaptainSubscriber = {
   id: string;
@@ -23,6 +24,7 @@ export async function sendCaptainEmailMessage({
   body: string;
 }) {
   const audience = await getCaptainEmailAudience(captain.id);
+  const replyTo = await replyToAddressForCaptain(captain);
   const batch = audience.slice(0, CAPTAIN_MESSAGE_BATCH_SIZE);
   if (!batch.length) return { sent: 0, failed: 0, remaining: 0 };
 
@@ -35,13 +37,44 @@ export async function sendCaptainEmailMessage({
         subject,
         text: emailCaptainMessageText(personalizedBody, subscriber.subscription_token, captainName),
         html: emailCaptainMessageHtml(personalizedBody, subscriber.subscription_token, captainName),
-        fromName: `${captainName} on behalf of Alberta's Voice`
+        fromName: `${captainName} on behalf of Alberta's Voice`,
+        replyTo
       };
     }),
     fromEmailEnv: "BROADCAST_FROM_EMAIL",
     idempotencyKey: captainMessageIdempotencyKey(captain.id, subject, body, batch)
   });
   return { sent: batch.length, failed: 0, remaining: audience.length - batch.length };
+}
+
+export async function replyToAddressForCaptain(captain: Profile) {
+  const alias = await ensureCaptainEmailAlias(captain);
+  return `updates+${alias}@${CAPTAIN_REPLY_DOMAIN}`;
+}
+
+async function ensureCaptainEmailAlias(captain: Profile) {
+  if (captain.captain_email_alias) return captain.captain_email_alias;
+
+  const service = createServiceClient();
+  const { data: existing, error: selectError } = await service
+    .from("profiles")
+    .select("captain_email_alias")
+    .eq("id", captain.id)
+    .single();
+  if (selectError) {
+    if (errorMessage(selectError).includes("captain_email_alias")) {
+      throw new Error("Missing profiles.captain_email_alias. Run supabase/migrations/202606070003_add_captain_email_aliases.sql in Supabase.");
+    }
+    throw selectError;
+  }
+
+  const existingAlias = existing?.captain_email_alias?.trim();
+  if (existingAlias) return existingAlias;
+
+  const alias = `cpt_${crypto.randomBytes(8).toString("hex")}`;
+  const { error: updateError } = await service.from("profiles").update({ captain_email_alias: alias }).eq("id", captain.id);
+  if (updateError) throw updateError;
+  return alias;
 }
 
 async function getCaptainEmailAudience(captainId: string) {
