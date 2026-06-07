@@ -9,13 +9,21 @@ import { getRequestIp } from "@/lib/turnstile";
 export async function updateSubscription(formData: FormData) {
   const parsed = updateSubscriptionSchema.parse({
     token: formData.get("token"),
-    preference: formData.get("preference")
+    preference: formData.get("preference"),
+    captainEmailConsent: formData.get("captainEmailConsent") === "yes"
   });
   const h = await headers();
-  await updateSubscriptionPreference(parsed.token, parsed.preference, {
-    ip: getRequestIp(h),
-    userAgent: h.get("user-agent")
-  });
+  await updateSubscriptionPreference(
+    parsed.token,
+    {
+      preference: parsed.preference,
+      captainEmailConsent: parsed.captainEmailConsent
+    },
+    {
+      ip: getRequestIp(h),
+      userAgent: h.get("user-agent")
+    }
+  );
   redirect(`/subscription/${parsed.token}?message=${encodeURIComponent("Your subscription preference has been updated.")}`);
 }
 

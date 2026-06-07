@@ -7,22 +7,36 @@ export async function getSubscriptionByToken(token: string) {
   const service = createServiceClient();
   const { data, error } = await service
     .from("subscribers")
-    .select("id,name,email,phone,preference,email_consent,sms_consent,unsubscribed_at,subscription_token")
+    .select("id,name,email,phone,preference,email_consent,sms_consent,captain_email_consent,unsubscribed_at,subscription_token,profiles:captain_id(name)")
     .eq("subscription_token", token)
     .single();
   if (error || !data) return null;
   return data as Pick<
     Subscriber,
-    "id" | "name" | "email" | "phone" | "preference" | "email_consent" | "sms_consent" | "unsubscribed_at" | "subscription_token"
-  >;
+    | "id"
+    | "name"
+    | "email"
+    | "phone"
+    | "preference"
+    | "email_consent"
+    | "sms_consent"
+    | "captain_email_consent"
+    | "unsubscribed_at"
+    | "subscription_token"
+  > & { profiles?: { name?: string | null } | Array<{ name?: string | null }> | null };
 }
 
-export async function updateSubscriptionPreference(token: string, preference: Preference, requestMeta: RequestMeta = {}) {
+export async function updateSubscriptionPreference(
+  token: string,
+  updates: { preference: Preference; captainEmailConsent: boolean },
+  requestMeta: RequestMeta = {}
+) {
   const service = createServiceClient();
   const { data: subscriber, error } = await service
     .from("subscribers")
     .update({
-      preference,
+      preference: updates.preference,
+      captain_email_consent: updates.captainEmailConsent,
       unsubscribed_at: null,
       updated_at: new Date().toISOString()
     })
@@ -42,7 +56,10 @@ export async function updateSubscriptionPreference(token: string, preference: Pr
     channel: "EMAIL",
     ip_address: requestMeta.ip,
     user_agent: requestMeta.userAgent,
-    metadata: { preference }
+    metadata: {
+      preference: updates.preference,
+      captain_email_consent: updates.captainEmailConsent
+    }
   });
 }
 

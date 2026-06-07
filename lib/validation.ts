@@ -28,13 +28,20 @@ export const subscriptionTokenSchema = z.object({
 
 export const updateSubscriptionSchema = z.object({
   token: z.string().min(20),
-  preference: z.enum(["ALL_UPDATES", "WEEKLY_DIGEST", "VOTE_REMINDER_ONLY"])
+  preference: z.enum(["ALL_UPDATES", "WEEKLY_DIGEST", "VOTE_REMINDER_ONLY"]),
+  captainEmailConsent: z.boolean()
 });
 
 export const preferenceFilterSchema = z.enum(["ALL", "ALL_UPDATES", "WEEKLY_DIGEST", "VOTE_REMINDER_ONLY"]);
 
 export const emailBroadcastSchema = z.object({
   preference: preferenceFilterSchema,
+  subject: z.string().trim().min(3).max(160),
+  body: z.string().trim().min(10).max(5000),
+  confirmConsent: z.literal("yes")
+});
+
+export const captainEmailMessageSchema = z.object({
   subject: z.string().trim().min(3).max(160),
   body: z.string().trim().min(10).max(5000),
   confirmConsent: z.literal("yes")

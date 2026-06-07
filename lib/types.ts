@@ -38,6 +38,7 @@ export type Subscriber = {
   preference: Preference;
   sms_consent: boolean;
   email_consent: boolean;
+  captain_email_consent: boolean;
   consented_at: string | null;
   unsubscribed_at: string | null;
   subscription_token: string;

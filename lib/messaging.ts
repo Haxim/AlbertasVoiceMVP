@@ -82,6 +82,33 @@ export function emailBroadcastHtml(body: string, token: string) {
   });
 }
 
+export function emailCaptainMessageText(body: string, token: string, captainName: string) {
+  const manageUrl = subscriptionUrl(token);
+  return `${body}
+
+--
+Alberta's Voice
+Authorized by Alberta's Voice, Referendum Third Party Advertiser.
+Contact: info@albertasvoice.ca
+Website: https://albertasvoice.ca
+TPA/compliance statement: https://albertasvoice.ca/disclaimer
+
+You are receiving this because you opted in to direct emails from ${captainName}.
+Manage your subscription or unsubscribe:
+${manageUrl}
+`;
+}
+
+export function emailCaptainMessageHtml(body: string, token: string, captainName: string) {
+  const manageUrl = subscriptionUrl(token);
+  return renderAlbertaVoiceEmail({
+    body,
+    ctaUrl: manageUrl,
+    ctaLabel: "Manage Email Preferences",
+    notice: `You are receiving this because you opted in to direct emails from ${captainName}.`
+  });
+}
+
 function renderAlbertaVoiceEmail({
   body,
   ctaUrl,
