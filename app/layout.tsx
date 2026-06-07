@@ -24,6 +24,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <span>Alberta&apos;s Voice</span>
             </Link>
             <div className="flex items-center gap-3 text-sm font-medium">
+              <Link href="/resources" className="hover:text-spruce">
+                Captain Resources
+              </Link>
               {profile?.role === "ADMIN" ? (
                 <Link href="/admin" className="hover:text-spruce">
                   Admin
