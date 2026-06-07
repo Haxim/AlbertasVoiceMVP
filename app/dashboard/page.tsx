@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createInvite } from "@/lib/actions/invites";
+import { sendCaptainEmailMessage } from "@/lib/actions/captain-messages";
 import { logout } from "@/lib/actions/auth";
 import { getCaptainDashboard } from "@/lib/queries";
 import { getCurrentProfile } from "@/lib/auth";
@@ -91,6 +92,29 @@ export default async function DashboardPage({
             </table>
           </div>
         </div>
+      </section>
+
+      <section className="mt-8 rounded-lg border border-line bg-white p-5">
+        <h2 className="text-xl font-semibold">Message invitees</h2>
+        <form action={sendCaptainEmailMessage} className="mt-4 space-y-4">
+          <label className="block">
+            <span className="text-sm font-medium">Subject</span>
+            <input name="subject" required className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium">Message (Markdown)</span>
+            <span className="mt-1 block text-xs leading-5 text-ink/60">
+              Supports Markdown. Use [captain] for your name and [name] for the subscriber name.
+            </span>
+            <textarea name="body" rows={8} required className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
+          </label>
+          <label className="flex items-start gap-3 rounded-md bg-field p-4 text-sm leading-6">
+            <input name="confirmConsent" type="checkbox" value="yes" required className="mt-1 h-4 w-4" />
+            <span>Send only to opted-in, non-unsubscribed subscribers who allow direct emails from me.</span>
+          </label>
+          <Turnstile siteKey={turnstileSiteKey} />
+          <button className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white">Send email</button>
+        </form>
       </section>
     </main>
   );

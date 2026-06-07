@@ -108,6 +108,7 @@ export async function acceptInviteByToken(token: string, preference: Preference,
       preference,
       sms_consent: Boolean(invite.normalized_phone),
       email_consent: Boolean(invite.normalized_email),
+      captain_email_consent: true,
       consented_at: new Date().toISOString()
     })
     .select("*")

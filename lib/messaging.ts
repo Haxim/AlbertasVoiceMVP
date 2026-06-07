@@ -82,6 +82,54 @@ export function emailBroadcastHtml(body: string, token: string) {
   });
 }
 
+export function emailCaptainMessageText(body: string, token: string, captainName: string) {
+  const manageUrl = subscriptionUrl(token);
+  return `${body}
+
+--
+Alberta's Voice
+Authorized by Alberta's Voice, Referendum Third Party Advertiser.
+Contact: info@albertasvoice.ca
+Website: https://albertasvoice.ca
+TPA/compliance statement: https://albertasvoice.ca/disclaimer
+
+You are receiving this because you opted in to direct emails from ${captainName}.
+Manage your subscription or unsubscribe:
+${manageUrl}
+`;
+}
+
+export function emailCaptainMessageHtml(body: string, token: string, captainName: string) {
+  const manageUrl = subscriptionUrl(token);
+  return renderAlbertaVoiceEmail({
+    body,
+    ctaUrl: manageUrl,
+    ctaLabel: "Manage Email Preferences",
+    notice: `You are receiving this because you opted in to direct emails from ${captainName}.`
+  });
+}
+
+export function emailInternalBroadcastText(body: string) {
+  return `${body}
+
+--
+Alberta's Voice
+Authorized by Alberta's Voice, Referendum Third Party Advertiser.
+Contact: info@albertasvoice.ca
+Website: https://albertasvoice.ca
+TPA/compliance statement: https://albertasvoice.ca/disclaimer
+`;
+}
+
+export function emailInternalBroadcastHtml(body: string) {
+  return renderAlbertaVoiceEmail({
+    body,
+    ctaUrl: "https://albertasvoice.ca",
+    ctaLabel: "Visit Alberta's Voice",
+    notice: "You are receiving this because you are an Alberta's Voice captain."
+  });
+}
+
 function renderAlbertaVoiceEmail({
   body,
   ctaUrl,

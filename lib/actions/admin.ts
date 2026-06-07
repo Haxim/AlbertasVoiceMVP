@@ -28,6 +28,7 @@ export async function sendEmailBroadcast(formData: FormData) {
   const admin = await requireAdmin();
   const h = await headers();
   const parsed = emailBroadcastSchema.safeParse({
+    audience: formData.get("audience") || "SUBSCRIBERS",
     preference: formData.get("preference"),
     subject: formData.get("subject"),
     body: formData.get("body"),
@@ -42,6 +43,7 @@ export async function sendEmailBroadcast(formData: FormData) {
     await verifyTurnstileToken(formData.get("cf-turnstile-response"), getRequestIp(h));
     const result = await sendEmailBroadcastServer({
       admin,
+      audience: parsed.data.audience,
       preference: parsed.data.preference,
       subject: parsed.data.subject,
       body: parsed.data.body

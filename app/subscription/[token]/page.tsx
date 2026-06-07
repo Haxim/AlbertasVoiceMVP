@@ -14,6 +14,8 @@ export default async function SubscriptionPage({
   if (!subscription) notFound();
 
   const isUnsubscribed = Boolean(subscription.unsubscribed_at);
+  const profile = Array.isArray(subscription.profiles) ? subscription.profiles[0] : subscription.profiles;
+  const senderName = profile?.name?.trim() || "the person who invited me";
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
@@ -53,6 +55,16 @@ export default async function SubscriptionPage({
               </label>
             ))}
           </div>
+          <label className="flex items-start gap-3 rounded-md border border-line p-3">
+            <input
+              name="captainEmailConsent"
+              type="checkbox"
+              value="yes"
+              defaultChecked={subscription.captain_email_consent}
+              className="mt-1 h-4 w-4"
+            />
+            <span className="font-medium">I wish to receive direct emails from {senderName}</span>
+          </label>
           <button className="focus-ring w-full rounded-md bg-spruce px-4 py-3 font-semibold text-white">
             Save preference
           </button>

@@ -1,11 +1,26 @@
 import crypto from "node:crypto";
 import { createServiceClient } from "@/lib/supabase/server";
 import { sendEmailBatch } from "@/lib/email";
-import { emailBroadcastHtml, emailBroadcastText } from "@/lib/messaging";
+import { emailBroadcastHtml, emailBroadcastText, emailInternalBroadcastHtml, emailInternalBroadcastText } from "@/lib/messaging";
 import { filterSubscribersByPreference } from "@/lib/rules";
-import type { PreferenceFilter, Profile } from "@/lib/types";
+import type { BroadcastAudience, PreferenceFilter, Profile } from "@/lib/types";
 
 const EMAIL_BROADCAST_BATCH_SIZE = 100;
+
+type SubscriberAudienceRow = {
+  id: string;
+  name?: string | null;
+  email: string;
+  preference: PreferenceFilter;
+  subscription_token: string;
+  profiles?: { name?: string | null } | Array<{ name?: string | null }> | null;
+};
+
+type CaptainAudienceRow = {
+  id: string;
+  name?: string | null;
+  email: string;
+};
 
 export async function previewAudienceCount(preference: PreferenceFilter) {
   const service = createServiceClient();
@@ -31,26 +46,29 @@ export async function exportSubscribersCsv(preference: PreferenceFilter) {
 
 export async function sendEmailBroadcast({
   admin,
+  audience,
   preference,
   subject,
   body
 }: {
   admin: Profile;
+  audience: BroadcastAudience;
   preference: PreferenceFilter;
   subject: string;
   body: string;
 }) {
   const service = createServiceClient();
-  const audience = await getEmailAudience(preference);
+  const recipients = await getEmailAudience(audience, preference);
   const { data: broadcast, error: broadcastError } = await service
     .from("broadcasts")
     .insert({
       admin_id: admin.id,
       channel: "EMAIL",
+      audience_type: audience,
       preference_filter: preference,
       subject,
       body,
-      audience_count: audience.length,
+      audience_count: recipients.length,
       status: "DRAFT"
     })
     .select("id")
@@ -68,7 +86,7 @@ export async function getIncompleteEmailBroadcasts() {
   const service = createServiceClient();
   const { data: broadcasts, error } = await service
     .from("broadcasts")
-    .select("id,subject,preference_filter,audience_count,status,created_at")
+    .select("id,subject,preference_filter,audience_type,audience_count,status,created_at")
     .eq("channel", "EMAIL")
     .in("status", ["DRAFT", "FAILED"])
     .order("created_at", { ascending: false })
@@ -77,7 +95,7 @@ export async function getIncompleteEmailBroadcasts() {
 
   return Promise.all(
     (broadcasts || []).map(async (broadcast) => {
-      const progress = await getEmailBroadcastProgress(broadcast.id, broadcast.preference_filter);
+      const progress = await getEmailBroadcastProgress(broadcast.id, audienceTypeForBroadcast(broadcast), broadcast.preference_filter);
       return {
         ...broadcast,
         sentCount: progress.sentCount,
@@ -91,15 +109,23 @@ export async function exportPendingEmailBroadcastCsv(broadcastId: string) {
   const service = createServiceClient();
   const { data: broadcast, error } = await service
     .from("broadcasts")
-    .select("preference_filter")
+    .select("preference_filter,audience_type")
     .eq("id", broadcastId)
     .eq("channel", "EMAIL")
     .single();
   if (error) throw error;
 
-  const { pending: rows } = await getEmailBroadcastProgress(broadcastId, broadcast.preference_filter);
-  const header = ["name", "email", "preference"].join(",");
-  const body = rows.map((row) => [row.name, row.email, row.preference].map(csvCell).join(","));
+  const audienceType = audienceTypeForBroadcast(broadcast);
+  const { pending: rows } = await getEmailBroadcastProgress(broadcastId, audienceType, broadcast.preference_filter);
+  const header = audienceType === "CAPTAINS" ? ["name", "email"].join(",") : ["name", "email", "preference"].join(",");
+  const body = rows.map((row) => {
+    if (audienceType === "CAPTAINS") {
+      const captain = row as CaptainAudienceRow;
+      return [captain.name, captain.email].map(csvCell).join(",");
+    }
+    const subscriber = row as SubscriberAudienceRow;
+    return [subscriber.name, subscriber.email, subscriber.preference].map(csvCell).join(",");
+  });
   return [header, ...body].join("\n");
 }
 
@@ -107,20 +133,33 @@ async function processEmailBroadcastBatch(broadcastId: string) {
   const service = createServiceClient();
   const { data: broadcast, error: broadcastError } = await service
     .from("broadcasts")
-    .select("id,subject,body,preference_filter")
+    .select("id,subject,body,preference_filter,audience_type")
     .eq("id", broadcastId)
     .eq("channel", "EMAIL")
     .single();
   if (broadcastError) throw broadcastError;
 
-  const { pending } = await getEmailBroadcastProgress(broadcast.id, broadcast.preference_filter);
+  const audienceType = audienceTypeForBroadcast(broadcast);
+  const { pending } = await getEmailBroadcastProgress(broadcast.id, audienceType, broadcast.preference_filter);
   const batch = pending.slice(0, EMAIL_BROADCAST_BATCH_SIZE);
   let failed = 0;
   let sent = 0;
   if (batch.length) {
     try {
       const providerMessageIds = await sendEmailBatch({
-        emails: batch.map((subscriber) => {
+        emails: batch.map((recipient) => {
+          if (audienceType === "CAPTAINS") {
+            const captain = recipient as CaptainAudienceRow;
+            const body = personalizeCaptainBroadcastBody(broadcast.body, captain);
+            return {
+              to: captain.email,
+              subject: broadcast.subject,
+              text: emailInternalBroadcastText(body),
+              html: emailInternalBroadcastHtml(body),
+              fromName: "Alberta's Voice"
+            };
+          }
+          const subscriber = recipient as SubscriberAudienceRow;
           const body = personalizeBroadcastBody(broadcast.body, subscriber);
           return {
             to: subscriber.email,
@@ -136,7 +175,8 @@ async function processEmailBroadcastBatch(broadcastId: string) {
       await service.from("broadcast_deliveries").insert(
         batch.map((subscriber, index) => ({
           broadcast_id: broadcast.id,
-          subscriber_id: subscriber.id,
+          subscriber_id: audienceType === "SUBSCRIBERS" ? subscriber.id : null,
+          recipient_profile_id: audienceType === "CAPTAINS" ? subscriber.id : null,
           channel: "EMAIL",
           provider_message_id: providerMessageIds[index],
           status: "SENT"
@@ -148,7 +188,8 @@ async function processEmailBroadcastBatch(broadcastId: string) {
       await service.from("broadcast_deliveries").insert(
         batch.map((subscriber) => ({
           broadcast_id: broadcast.id,
-          subscriber_id: subscriber.id,
+          subscriber_id: audienceType === "SUBSCRIBERS" ? subscriber.id : null,
+          recipient_profile_id: audienceType === "CAPTAINS" ? subscriber.id : null,
           channel: "EMAIL",
           status: "FAILED",
           error: errorMessage(error)
@@ -170,7 +211,12 @@ async function processEmailBroadcastBatch(broadcastId: string) {
   return { broadcastId: broadcast.id, sent, failed, remaining };
 }
 
-async function getEmailAudience(preference: PreferenceFilter) {
+async function getEmailAudience(audience: BroadcastAudience, preference: PreferenceFilter) {
+  if (audience === "CAPTAINS") return getCaptainEmailAudience();
+  return getSubscriberEmailAudience(preference);
+}
+
+async function getSubscriberEmailAudience(preference: PreferenceFilter) {
   const service = createServiceClient();
   const { data, error } = await service
     .from("subscribers")
@@ -184,25 +230,61 @@ async function getEmailAudience(preference: PreferenceFilter) {
     }
     throw error;
   }
-  return filterSubscribersByPreference(data || [], preference);
+  return filterSubscribersByPreference(data || [], preference)
+    .filter((subscriber) => Boolean(subscriber.email))
+    .map(
+      (subscriber) =>
+        ({
+          ...subscriber,
+          email: String(subscriber.email)
+        }) as SubscriberAudienceRow
+    );
 }
 
-async function getSentSubscriberIds(broadcastId: string) {
+async function getCaptainEmailAudience() {
   const service = createServiceClient();
+  const { data, error } = await service
+    .from("profiles")
+    .select("id,name,email")
+    .eq("role", "CAPTAIN")
+    .not("email", "is", null)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data || [])
+    .filter((profile) => Boolean(profile.email))
+    .map((profile) => ({
+      id: String(profile.id),
+      name: profile.name,
+      email: String(profile.email)
+    }));
+}
+
+async function getSentRecipientIds(broadcastId: string, audience: BroadcastAudience) {
+  const service = createServiceClient();
+  if (audience === "CAPTAINS") {
+    const { data, error } = await service
+      .from("broadcast_deliveries")
+      .select("recipient_profile_id")
+      .eq("broadcast_id", broadcastId)
+      .eq("status", "SENT");
+    if (error) throw error;
+    return new Set((data || []).map((delivery) => delivery.recipient_profile_id).filter(Boolean));
+  }
+
   const { data, error } = await service
     .from("broadcast_deliveries")
     .select("subscriber_id")
     .eq("broadcast_id", broadcastId)
     .eq("status", "SENT");
   if (error) throw error;
-  return new Set((data || []).map((delivery) => delivery.subscriber_id));
+  return new Set((data || []).map((delivery) => delivery.subscriber_id).filter(Boolean));
 }
 
-async function getEmailBroadcastProgress(broadcastId: string, preference: PreferenceFilter) {
-  const [audience, sentSubscriberIds] = await Promise.all([getEmailAudience(preference), getSentSubscriberIds(broadcastId)]);
+async function getEmailBroadcastProgress(broadcastId: string, audience: BroadcastAudience, preference: PreferenceFilter) {
+  const [recipients, sentRecipientIds] = await Promise.all([getEmailAudience(audience, preference), getSentRecipientIds(broadcastId, audience)]);
   return {
-    pending: audience.filter((subscriber) => !sentSubscriberIds.has(subscriber.id)),
-    sentCount: sentSubscriberIds.size
+    pending: recipients.filter((recipient) => !sentRecipientIds.has(recipient.id)),
+    sentCount: sentRecipientIds.size
   };
 }
 
@@ -230,6 +312,11 @@ export function personalizeBroadcastBody(
     .replace(/\[name\]/g, subscriberNameForSubscriber(subscriber));
 }
 
+export function personalizeCaptainBroadcastBody(body: string, captain: { name?: string | null; email?: string | null }) {
+  const captainName = captain.name?.trim() || captain.email?.trim() || "Captain";
+  return body.replace(/\[captain\]/g, captainName).replace(/\[name\]/g, captainName);
+}
+
 function captainNameForSubscriber(subscriber: { profiles?: { name?: string | null } | Array<{ name?: string | null }> | null }) {
   const profile = Array.isArray(subscriber.profiles) ? subscriber.profiles[0] : subscriber.profiles;
   const captainName = profile?.name?.trim();
@@ -238,6 +325,10 @@ function captainNameForSubscriber(subscriber: { profiles?: { name?: string | nul
 
 function subscriberNameForSubscriber(subscriber: { name?: string | null }) {
   return subscriber.name?.trim() || "friend";
+}
+
+function audienceTypeForBroadcast(broadcast: { audience_type?: string | null }) {
+  return broadcast.audience_type === "CAPTAINS" ? "CAPTAINS" : "SUBSCRIBERS";
 }
 
 function errorMessage(error: unknown) {

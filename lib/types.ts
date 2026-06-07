@@ -2,6 +2,7 @@ export type Role = "CAPTAIN" | "ADMIN";
 export type InviteStatus = "PENDING" | "ACCEPTED" | "DECLINED" | "EXPIRED" | "UNSUBSCRIBED";
 export type Preference = "ALL_UPDATES" | "WEEKLY_DIGEST" | "VOTE_REMINDER_ONLY";
 export type PreferenceFilter = Preference | "ALL";
+export type BroadcastAudience = "SUBSCRIBERS" | "CAPTAINS";
 
 export type Profile = {
   id: string;
@@ -38,6 +39,7 @@ export type Subscriber = {
   preference: Preference;
   sms_consent: boolean;
   email_consent: boolean;
+  captain_email_consent: boolean;
   consented_at: string | null;
   unsubscribed_at: string | null;
   subscription_token: string;

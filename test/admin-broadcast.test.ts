@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { personalizeBroadcastBody } from "@/lib/server/admin";
+import { personalizeBroadcastBody, personalizeCaptainBroadcastBody } from "@/lib/server/admin";
 
 describe("broadcast body personalization", () => {
   it("replaces placeholders with the subscriber and captain names", () => {
@@ -18,5 +18,14 @@ describe("broadcast body personalization", () => {
     });
 
     expect(body).toBe("Hi friend, from Alberta's Voice.");
+  });
+
+  it("uses the captain name for captain-only broadcast placeholders", () => {
+    const body = personalizeCaptainBroadcastBody("Hi [name], this is for [captain].", {
+      name: "Captain One",
+      email: "captain@example.test"
+    });
+
+    expect(body).toBe("Hi Captain One, this is for Captain One.");
   });
 });
