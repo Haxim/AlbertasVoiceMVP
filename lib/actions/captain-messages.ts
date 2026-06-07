@@ -19,6 +19,7 @@ export async function sendCaptainEmailMessage(formData: FormData) {
     redirect(`/dashboard?error=${encodeURIComponent(parsed.error.issues[0]?.message || "Invalid message.")}`);
   }
 
+  let message = "Email sent.";
   try {
     await verifyTurnstileToken(formData.get("cf-turnstile-response"), getRequestIp(h));
     const result = await sendCaptainEmailMessageServer({
@@ -26,10 +27,11 @@ export async function sendCaptainEmailMessage(formData: FormData) {
       subject: parsed.data.subject,
       body: parsed.data.body
     });
-    redirect(`/dashboard?message=${encodeURIComponent(batchResultMessage(result))}`);
+    message = batchResultMessage(result);
   } catch (error) {
     redirect(`/dashboard?error=${encodeURIComponent(errorMessage(error, "Direct email failed."))}`);
   }
+  redirect(`/dashboard?message=${encodeURIComponent(message)}`);
 }
 
 function batchResultMessage(result: { sent: number; failed: number; remaining: number }) {
