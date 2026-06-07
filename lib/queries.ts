@@ -31,17 +31,6 @@ export async function getInviteByToken(token: string) {
   return data;
 }
 
-export async function getLeaderboard() {
-  noStore();
-  const service = createServiceClient();
-  const { data, error } = await service.rpc("leaderboard_counts");
-  if (error) throw error;
-  return {
-    allTime: (data || []).filter((row: { period: string }) => row.period === "all_time"),
-    last7Days: (data || []).filter((row: { period: string }) => row.period === "last_7_days")
-  };
-}
-
 export async function getAdminCounts() {
   noStore();
   const service = createServiceClient();

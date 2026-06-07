@@ -22,9 +22,6 @@ export default function HomePage() {
               <Link href="/signup" className="focus-ring rounded-md bg-spruce px-5 py-3 text-center font-semibold text-white">
                 Join as a captain
               </Link>
-              <Link href="/leaderboard" className="focus-ring rounded-md border border-line bg-white px-5 py-3 text-center font-semibold">
-                See who&apos;s building
-              </Link>
             </div>
           </div>
           <div className="rounded-lg border border-line bg-white p-5 shadow-sm shadow-sky/10">

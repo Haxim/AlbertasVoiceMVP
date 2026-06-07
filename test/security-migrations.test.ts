@@ -27,12 +27,16 @@ describe("security migrations", () => {
   });
 
   it("limits non-admin profile updates to non-privileged fields", () => {
-    const sql = migration("202606040002_lock_profile_privileged_fields.sql");
+    const sql = [
+      migration("202606040002_lock_profile_privileged_fields.sql"),
+      migration("202606070004_lock_captain_email_alias.sql")
+    ].join("\n");
 
     expect(sql).toContain("prevent_non_admin_profile_privileged_change");
     expect(sql).toContain("only admins can change profile roles");
     expect(sql).toContain("only admins can change profile emails");
     expect(sql).toContain("only admins can change profile creation timestamps");
+    expect(sql).toContain("only admins can change captain email aliases");
   });
 
   it("keeps admin-only tables behind admin RLS policies", () => {

@@ -7,7 +7,8 @@ export async function sendEmail({
   html,
   fromName = "Alberta's Voice",
   fromEmailEnv,
-  idempotencyKey
+  idempotencyKey,
+  replyTo
 }: {
   to: string;
   subject: string;
@@ -16,6 +17,7 @@ export async function sendEmail({
   fromName?: string;
   fromEmailEnv: "BROADCAST_FROM_EMAIL" | "INVITE_FROM_EMAIL";
   idempotencyKey?: string;
+  replyTo?: string;
 }) {
   const apiKey = await runtimeEnv("RESEND_API_KEY");
   const fromEmail = await runtimeEnv(fromEmailEnv);
@@ -31,7 +33,7 @@ export async function sendEmail({
       "content-type": "application/json",
       ...(idempotencyKey ? { "idempotency-key": idempotencyKey } : {})
     },
-    body: JSON.stringify({ from, to, subject, text, html })
+    body: JSON.stringify({ from, to, subject, text, html, ...(replyTo ? { reply_to: replyTo } : {}) })
   });
 
   const payload = (await response.json().catch(() => ({}))) as { id?: string; message?: string; name?: string };
@@ -46,7 +48,7 @@ export async function sendEmailBatch({
   fromEmailEnv,
   idempotencyKey
 }: {
-  emails: Array<{ to: string; subject: string; text: string; html?: string; fromName?: string }>;
+  emails: Array<{ to: string; subject: string; text: string; html?: string; fromName?: string; replyTo?: string }>;
   fromEmailEnv: "BROADCAST_FROM_EMAIL" | "INVITE_FROM_EMAIL";
   idempotencyKey: string;
 }) {
@@ -63,9 +65,10 @@ export async function sendEmailBatch({
       "idempotency-key": idempotencyKey
     },
     body: JSON.stringify(
-      emails.map(({ fromName = "Alberta's Voice", ...email }) => ({
+      emails.map(({ fromName = "Alberta's Voice", replyTo, ...email }) => ({
         ...email,
-        from: formatSender(fromEmail, fromName)
+        from: formatSender(fromEmail, fromName),
+        ...(replyTo ? { reply_to: replyTo } : {})
       }))
     )
   });
