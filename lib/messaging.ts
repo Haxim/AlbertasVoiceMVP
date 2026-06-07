@@ -109,6 +109,27 @@ export function emailCaptainMessageHtml(body: string, token: string, captainName
   });
 }
 
+export function emailInternalBroadcastText(body: string) {
+  return `${body}
+
+--
+Alberta's Voice
+Authorized by Alberta's Voice, Referendum Third Party Advertiser.
+Contact: info@albertasvoice.ca
+Website: https://albertasvoice.ca
+TPA/compliance statement: https://albertasvoice.ca/disclaimer
+`;
+}
+
+export function emailInternalBroadcastHtml(body: string) {
+  return renderAlbertaVoiceEmail({
+    body,
+    ctaUrl: "https://albertasvoice.ca",
+    ctaLabel: "Visit Alberta's Voice",
+    notice: "You are receiving this because you are an Alberta's Voice captain."
+  });
+}
+
 function renderAlbertaVoiceEmail({
   body,
   ctaUrl,
