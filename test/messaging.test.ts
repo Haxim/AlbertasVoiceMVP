@@ -5,7 +5,7 @@ describe("email broadcast text", () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://example.test");
     const { emailBroadcastText } = await import("@/lib/messaging");
 
-    expect(emailBroadcastText("Hello supporters", "token-123")).toContain(
+    expect(await emailBroadcastText("Hello supporters", "token-123")).toContain(
       "https://example.test/subscription/token-123"
     );
   });
@@ -16,7 +16,7 @@ describe("email broadcast html", () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://example.test");
     const { emailBroadcastHtml } = await import("@/lib/messaging");
 
-    const html = emailBroadcastHtml(
+    const html = await emailBroadcastHtml(
       `# Campaign update
 
 Hello **supporters**.
@@ -37,7 +37,7 @@ Hello **supporters**.
   it("escapes unsupported html in markdown", async () => {
     const { emailBroadcastHtml } = await import("@/lib/messaging");
 
-    const html = emailBroadcastHtml("<script>alert('nope')</script>", "token-123");
+    const html = await emailBroadcastHtml("<script>alert('nope')</script>", "token-123");
 
     expect(html).not.toContain("<script>");
     expect(html).toContain("&lt;script&gt;");
@@ -49,7 +49,7 @@ describe("email invite html", () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://example.test");
     const { emailInviteHtml, emailInviteSubject } = await import("@/lib/messaging");
 
-    const html = emailInviteHtml("Captain One", {
+    const html = await emailInviteHtml("Captain One", {
       invitee_name: "Friend <Name>",
       token: "invite-token-123"
     });

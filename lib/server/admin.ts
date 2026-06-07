@@ -146,8 +146,8 @@ async function processEmailBroadcastBatch(broadcastId: string) {
   let sent = 0;
   if (batch.length) {
     try {
-      const providerMessageIds = await sendEmailBatch({
-        emails: batch.map((recipient) => {
+      const emails = await Promise.all(
+        batch.map(async (recipient) => {
           if (audienceType === "CAPTAINS") {
             const captain = recipient as CaptainAudienceRow;
             const body = personalizeCaptainBroadcastBody(broadcast.body, captain);
@@ -164,11 +164,14 @@ async function processEmailBroadcastBatch(broadcastId: string) {
           return {
             to: subscriber.email,
             subject: broadcast.subject,
-            text: emailBroadcastText(body, subscriber.subscription_token),
-            html: emailBroadcastHtml(body, subscriber.subscription_token),
+            text: await emailBroadcastText(body, subscriber.subscription_token),
+            html: await emailBroadcastHtml(body, subscriber.subscription_token),
             fromName: senderNameForSubscriber(subscriber)
           };
-        }),
+        })
+      );
+      const providerMessageIds = await sendEmailBatch({
+        emails,
         fromEmailEnv: "BROADCAST_FROM_EMAIL",
         idempotencyKey: emailBatchIdempotencyKey(broadcast.id, batch)
       });

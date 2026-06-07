@@ -1,24 +1,24 @@
 import type { Invite } from "@/lib/types";
+import { getRuntimeAppUrl } from "@/lib/app-url";
+import { runtimeEnv } from "@/lib/runtime-env";
 
-export function inviteUrl(token: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  return `${baseUrl.replace(/\/$/, "")}/invite/${token}`;
+export async function inviteUrl(token: string) {
+  return `${await getRuntimeAppUrl()}/invite/${token}`;
 }
 
-export function subscriptionUrl(token: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  return `${baseUrl.replace(/\/$/, "")}/subscription/${token}`;
+export async function subscriptionUrl(token: string) {
+  return `${await getRuntimeAppUrl()}/subscription/${token}`;
 }
 
-export function smsInviteText(captainName: string, invite: Pick<Invite, "token">) {
-  return `${captainName} invited you to choose whether to receive Alberta's Voice updates. You are not subscribed unless you opt in: ${inviteUrl(invite.token)}`;
+export async function smsInviteText(captainName: string, invite: Pick<Invite, "token">) {
+  return `${captainName} invited you to choose whether to receive Alberta's Voice updates. You are not subscribed unless you opt in: ${await inviteUrl(invite.token)}`;
 }
 
 export function emailInviteSubject(captainName: string) {
   return `${captainName} invited you to learn more about Alberta's Voice`;
 }
 
-export function emailInviteText(captainName: string, invite: Pick<Invite, "invitee_name" | "token">) {
+export async function emailInviteText(captainName: string, invite: Pick<Invite, "invitee_name" | "token">) {
   return `Hi ${invite.invitee_name},
 
 ${captainName} thought you might be interested in learning more about Alberta's Voice.
@@ -26,15 +26,15 @@ ${captainName} thought you might be interested in learning more about Alberta's 
 Alberta's Voice is a grassroots campaign working to keep Alberta in Canada and encourage Albertans to vote No on the nine referendum questions. We share information, connect supporters, and help Albertans take action in support of Alberta's future within Canada.
 
 You are not subscribed to Alberta's Voice updates. To learn more and choose whether you'd like to receive future emails, visit:
-${inviteUrl(invite.token)}
+${await inviteUrl(invite.token)}
 
 If you'd prefer not to hear from us, you can decline the invitation from that page and you will not receive further communications.
 
 Thank you for taking a moment to learn more about Alberta's Voice.`;
 }
 
-export function emailInviteHtml(captainName: string, invite: Pick<Invite, "invitee_name" | "token">) {
-  const invitationUrl = inviteUrl(invite.token);
+export async function emailInviteHtml(captainName: string, invite: Pick<Invite, "invitee_name" | "token">) {
+  const invitationUrl = await inviteUrl(invite.token);
   const body = `Hi ${invite.invitee_name},
 
 ${captainName} thought you might be interested in learning more about Alberta's Voice.
@@ -55,8 +55,8 @@ Thank you for taking a moment to learn more about Alberta's Voice.`;
   });
 }
 
-export function emailBroadcastText(body: string, token: string) {
-  const manageUrl = subscriptionUrl(token);
+export async function emailBroadcastText(body: string, token: string) {
+  const manageUrl = await subscriptionUrl(token);
   return `${body}
 
 --
@@ -72,8 +72,8 @@ ${manageUrl}
 `;
 }
 
-export function emailBroadcastHtml(body: string, token: string) {
-  const manageUrl = subscriptionUrl(token);
+export async function emailBroadcastHtml(body: string, token: string) {
+  const manageUrl = await subscriptionUrl(token);
   return renderAlbertaVoiceEmail({
     body,
     ctaUrl: manageUrl,
@@ -82,8 +82,8 @@ export function emailBroadcastHtml(body: string, token: string) {
   });
 }
 
-export function emailCaptainMessageText(body: string, token: string, captainName: string) {
-  const manageUrl = subscriptionUrl(token);
+export async function emailCaptainMessageText(body: string, token: string, captainName: string) {
+  const manageUrl = await subscriptionUrl(token);
   return `${body}
 
 --
@@ -99,8 +99,8 @@ ${manageUrl}
 `;
 }
 
-export function emailCaptainMessageHtml(body: string, token: string, captainName: string) {
-  const manageUrl = subscriptionUrl(token);
+export async function emailCaptainMessageHtml(body: string, token: string, captainName: string) {
+  const manageUrl = await subscriptionUrl(token);
   return renderAlbertaVoiceEmail({
     body,
     ctaUrl: manageUrl,
@@ -253,10 +253,10 @@ function escapeHtml(value: string) {
 }
 
 export async function sendSmsInvite(to: string, body: string) {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_FROM_PHONE;
-  const messagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+  const accountSid = await runtimeEnv("TWILIO_ACCOUNT_SID");
+  const authToken = await runtimeEnv("TWILIO_AUTH_TOKEN");
+  const from = await runtimeEnv("TWILIO_FROM_PHONE");
+  const messagingServiceSid = await runtimeEnv("TWILIO_MESSAGING_SERVICE_SID");
   if (!accountSid || !authToken || (!from && !messagingServiceSid)) {
     console.warn("Twilio env missing; invite created but SMS not sent.");
     return { skipped: true };

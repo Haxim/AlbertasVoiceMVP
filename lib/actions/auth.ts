@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { getRuntimeAppUrl } from "@/lib/app-url";
 import { createSupabaseServerClient, createServiceClient } from "@/lib/supabase/server";
 import { getRequestIp, verifyTurnstileToken } from "@/lib/turnstile";
 
@@ -46,7 +47,7 @@ export async function requestPasswordReset(formData: FormData) {
   if (!email) redirect(`/login?message=${encodeURIComponent("Enter your email address.")}`);
 
   const supabase = await createSupabaseServerClient();
-  const redirectTo = `${getAppUrl()}/auth/callback?next=/reset-password`;
+  const redirectTo = `${await getRuntimeAppUrl()}/auth/callback?next=/reset-password`;
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
   if (error) redirect(`/login?message=${encodeURIComponent(error.message)}`);
 
@@ -85,8 +86,4 @@ async function ensureAuthProfile(id: string, name: string | null, email: string 
     },
     { onConflict: "id" }
   );
-}
-
-function getAppUrl() {
-  return (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
 }
