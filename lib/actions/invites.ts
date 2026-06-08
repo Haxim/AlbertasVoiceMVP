@@ -31,13 +31,21 @@ export async function acceptInvite(formData: FormData) {
   const parsed = acceptInviteSchema.parse({
     token: formData.get("token"),
     preference: formData.get("preference"),
-    consent: formData.get("consent")
+    consent: formData.get("consent"),
+    captainEmailConsent: formData.get("captainEmailConsent") === "yes"
   });
   const h = await headers();
-  await acceptInviteByToken(parsed.token, parsed.preference, {
-    ip: h.get("x-forwarded-for"),
-    userAgent: h.get("user-agent")
-  });
+  await acceptInviteByToken(
+    parsed.token,
+    {
+      preference: parsed.preference,
+      captainEmailConsent: parsed.captainEmailConsent
+    },
+    {
+      ip: h.get("x-forwarded-for"),
+      userAgent: h.get("user-agent")
+    }
+  );
   redirect("/invite/thanks");
 }
 

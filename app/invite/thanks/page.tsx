@@ -10,7 +10,7 @@ export default async function InviteThanksPage({ searchParams }: { searchParams?
         <p className="mt-3 leading-7 text-ink/70">
           {declined
             ? "We recorded your choice and will not send campaign updates from this invite."
-            : "Your preference has been saved. You can unsubscribe from SMS by replying STOP."}
+            : "Your preference has been saved. You can unsubscribe from future emails at any time."}
         </p>
         <Link href="/" className="mt-6 inline-block rounded-md bg-spruce px-4 py-2 font-semibold text-white">
           Back home

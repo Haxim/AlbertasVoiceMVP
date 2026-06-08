@@ -90,7 +90,11 @@ export async function createInviteForCaptain(
   return { invite: data, delivery };
 }
 
-export async function acceptInviteByToken(token: string, preference: Preference, requestMeta: RequestMeta = {}) {
+export async function acceptInviteByToken(
+  token: string,
+  updates: { preference: Preference; captainEmailConsent: boolean },
+  requestMeta: RequestMeta = {}
+) {
   const service = createServiceClient();
   const { data: invite, error } = await service.from("invites").select("*").eq("token", token).single();
   if (error || !invite) throw new Error("Invite not found.");
@@ -106,10 +110,10 @@ export async function acceptInviteByToken(token: string, preference: Preference,
       phone: invite.invitee_phone,
       normalized_email: invite.normalized_email,
       normalized_phone: invite.normalized_phone,
-      preference,
+      preference: updates.preference,
       sms_consent: Boolean(invite.normalized_phone),
       email_consent: Boolean(invite.normalized_email),
-      captain_email_consent: true,
+      captain_email_consent: updates.captainEmailConsent,
       consented_at: new Date().toISOString()
     })
     .select("*")
@@ -124,7 +128,7 @@ export async function acceptInviteByToken(token: string, preference: Preference,
     channel: invite.normalized_phone ? "SMS" : "EMAIL",
     ip_address: requestMeta.ip,
     user_agent: requestMeta.userAgent,
-    metadata: { preference }
+    metadata: { preference: updates.preference, captain_email_consent: updates.captainEmailConsent }
   });
 }
 
