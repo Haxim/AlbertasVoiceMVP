@@ -35,6 +35,7 @@ Hello **supporters**.
   });
 
   it("escapes unsupported html in markdown", async () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://example.test");
     const { emailBroadcastHtml } = await import("@/lib/messaging");
 
     const html = await emailBroadcastHtml("<script>alert('nope')</script>", "token-123");
@@ -65,4 +66,5 @@ describe("email invite html", () => {
     expect(html).not.toContain("Manage Email Preferences");
     expect(html).not.toContain("You are receiving this because you opted in");
   });
+
 });

@@ -14,6 +14,9 @@ export function runtimeEnvSync(name: string) {
 }
 
 export async function runtimeEnv(name: string) {
+  const syncValue = runtimeEnvSync(name);
+  if (syncValue) return syncValue;
+
   try {
     const { env } = await getCloudflareContext({ async: true });
     const value = (env as Record<string, unknown>)[name];
