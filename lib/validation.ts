@@ -15,7 +15,8 @@ export const createInviteSchema = z
 export const acceptInviteSchema = z.object({
   token: z.string().min(20),
   preference: z.enum(["ALL_UPDATES", "WEEKLY_DIGEST", "VOTE_REMINDER_ONLY"]),
-  consent: z.literal("yes")
+  consent: z.literal("yes"),
+  captainEmailConsent: z.boolean()
 });
 
 export const tokenSchema = z.object({

@@ -14,7 +14,8 @@ describe("invite acceptance validation", () => {
     const result = acceptInviteSchema.safeParse({
       token: "abcdefghijklmnopqrstuvwxyz",
       preference: "VOTE_REMINDER_ONLY",
-      consent: "yes"
+      consent: "yes",
+      captainEmailConsent: true
     });
     expect(result.success).toBe(true);
   });
