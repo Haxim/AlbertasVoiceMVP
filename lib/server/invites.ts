@@ -4,6 +4,7 @@ import { normalizeEmail, normalizePhone } from "@/lib/normalization";
 import { hasDuplicateActiveContact, isSuppressed } from "@/lib/rules";
 import { emailInviteHtml, emailInviteSubject, emailInviteText, smsInviteText, sendSmsInvite } from "@/lib/messaging";
 import { sendEmail } from "@/lib/email";
+import { runtimeEnv } from "@/lib/runtime-env";
 import type { Preference, Profile } from "@/lib/types";
 
 export type InviteDeliveryStatus = "sent" | "skipped" | "none";
@@ -68,16 +69,16 @@ export async function createInviteForCaptain(
   });
 
   if (normalized_phone) {
-    const result = await sendSmsInvite(normalized_phone, smsInviteText(captainName, data));
+    const result = await sendSmsInvite(normalized_phone, await smsInviteText(captainName, data));
     delivery.sms = result && "skipped" in result ? "skipped" : "sent";
   }
   if (normalized_email) {
-    if (process.env.RESEND_API_KEY && process.env.INVITE_FROM_EMAIL) {
+    if ((await runtimeEnv("RESEND_API_KEY")) && (await runtimeEnv("INVITE_FROM_EMAIL"))) {
       await sendEmail({
         to: normalized_email,
         subject: emailInviteSubject(captainName),
-        text: emailInviteText(captainName, data),
-        html: emailInviteHtml(captainName, data),
+        text: await emailInviteText(captainName, data),
+        html: await emailInviteHtml(captainName, data),
         fromName: `${captainName} on behalf of Alberta's Voice`,
         fromEmailEnv: "INVITE_FROM_EMAIL"
       });

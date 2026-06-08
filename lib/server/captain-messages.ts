@@ -27,20 +27,23 @@ export async function sendCaptainEmailMessage({
   const replyTo = await replyToAddressForCaptain(captain);
   const batch = audience.slice(0, CAPTAIN_MESSAGE_BATCH_SIZE);
   if (!batch.length) return { sent: 0, failed: 0, remaining: 0 };
-
-  await sendEmailBatch({
-    emails: batch.map((subscriber) => {
+  const emails = await Promise.all(
+    batch.map(async (subscriber) => {
       const personalizedBody = personalizeCaptainMessageBody(body, subscriber, captain);
       const captainName = captainNameForProfile(captain);
       return {
         to: subscriber.email,
         subject,
-        text: emailCaptainMessageText(personalizedBody, subscriber.subscription_token, captainName),
-        html: emailCaptainMessageHtml(personalizedBody, subscriber.subscription_token, captainName),
+        text: await emailCaptainMessageText(personalizedBody, subscriber.subscription_token, captainName),
+        html: await emailCaptainMessageHtml(personalizedBody, subscriber.subscription_token, captainName),
         fromName: `${captainName} on behalf of Alberta's Voice`,
         replyTo
       };
-    }),
+    })
+  );
+
+  await sendEmailBatch({
+    emails,
     fromEmailEnv: "BROADCAST_FROM_EMAIL",
     idempotencyKey: captainMessageIdempotencyKey(captain.id, subject, body, batch)
   });

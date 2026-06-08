@@ -29,16 +29,17 @@ export async function verifyTwilioSignature(request: Request, formData: FormData
   const signature = request.headers.get("x-twilio-signature");
   if (!signature) return false;
 
-  return candidateWebhookUrls(request).some((url) => {
+  const urls = await candidateWebhookUrls(request);
+  return urls.some((url) => {
     const expected = twilioSignature(url, formData, authToken);
     return timingSafeEqual(signature, expected);
   });
 }
 
-function candidateWebhookUrls(request: Request) {
+async function candidateWebhookUrls(request: Request) {
   const requestUrl = new URL(request.url);
   const urls = [requestUrl.toString()];
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  const appUrl = await runtimeEnv("NEXT_PUBLIC_APP_URL");
 
   if (appUrl) {
     const publicUrl = new URL(appUrl.replace(/\/$/, ""));
