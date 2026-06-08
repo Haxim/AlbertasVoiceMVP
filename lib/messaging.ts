@@ -19,14 +19,15 @@ export function emailInviteSubject(captainName: string) {
 }
 
 export async function emailInviteText(captainName: string, invite: Pick<Invite, "invitee_name" | "token">) {
+  const invitationUrl = await inviteUrl(invite.token);
   return `Hi ${invite.invitee_name},
 
 ${captainName} thought you might be interested in learning more about Alberta's Voice.
 
 Alberta's Voice is a grassroots campaign working to keep Alberta in Canada and encourage Albertans to vote No on the nine referendum questions. We share information, connect supporters, and help Albertans take action in support of Alberta's future within Canada.
 
-You are not subscribed to Alberta's Voice updates. To learn more and choose whether you'd like to receive future emails, visit:
-${await inviteUrl(invite.token)}
+You are not subscribed to Alberta's Voice updates. To learn more and choose whether you'd like to receive future emails, click here:
+${invitationUrl}
 
 If you'd prefer not to hear from us, you can decline the invitation from that page and you will not receive further communications.
 
@@ -41,7 +42,7 @@ ${captainName} thought you might be interested in learning more about Alberta's 
 
 Alberta's Voice is a grassroots campaign working to keep Alberta in Canada and encourage Albertans to vote No on the nine referendum questions. We share information, connect supporters, and help Albertans take action in support of Alberta's future within Canada.
 
-You are not subscribed to Alberta's Voice updates. To learn more and choose whether you'd like to receive future emails, visit:
+You are not subscribed to Alberta's Voice updates. To learn more and choose whether you'd like to receive future emails, [click here](${invitationUrl}).
 
 If you'd prefer not to hear from us, you can decline the invitation from that page and you will not receive further communications.
 

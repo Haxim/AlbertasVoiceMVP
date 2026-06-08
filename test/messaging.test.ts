@@ -62,9 +62,28 @@ describe("email invite html", () => {
     expect(html).toContain("Friend &lt;Name&gt;");
     expect(html).toContain("Review Invitation");
     expect(html).toContain("https://example.test/invite/invite-token-123");
+    expect(html).toContain(
+      'choose whether you&#39;d like to receive future emails, <a href="https://example.test/invite/invite-token-123" style="color:#003754;text-decoration:underline;">click here</a>.'
+    );
     expect(html).toContain("You are not subscribed to Alberta&#39;s Voice updates.");
     expect(html).not.toContain("Manage Email Preferences");
     expect(html).not.toContain("You are receiving this because you opted in");
   });
 
+});
+
+describe("email invite text", () => {
+  it("places the invitation URL directly after click here", async () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://example.test");
+    const { emailInviteText } = await import("@/lib/messaging");
+
+    const text = await emailInviteText("Captain One", {
+      invitee_name: "Friend",
+      token: "invite-token-123"
+    });
+
+    expect(text).toContain(
+      "choose whether you'd like to receive future emails, click here:\nhttps://example.test/invite/invite-token-123"
+    );
+  });
 });
