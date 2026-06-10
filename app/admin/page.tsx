@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import {
-  adminExportCaptains,
-  adminExportSubscribers,
+  adminExportCsv,
   previewBroadcastAudience,
   resumeEmailBroadcast,
   sendEmailBroadcast
@@ -43,20 +42,10 @@ export default async function AdminPage({
           <PreferenceSelect />
           <button className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white">Preview count</button>
         </form>
-        <form action={adminExportSubscribers} className="space-y-4 rounded-lg border border-line bg-white p-5">
+        <form action={adminExportCsv} className="space-y-4 rounded-lg border border-line bg-white p-5">
           <h2 className="text-xl font-semibold">Export CSV</h2>
-          <PreferenceSelect />
-          <div className="flex flex-wrap gap-3">
-            <button className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white">
-              Download subscribers CSV
-            </button>
-            <button
-              formAction={adminExportCaptains}
-              className="focus-ring rounded-md border border-spruce px-4 py-2 font-semibold text-spruce"
-            >
-              Download captains CSV
-            </button>
-          </div>
+          <ExportCsvSelect />
+          <button className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white">Download CSV</button>
         </form>
       </section>
       <section className="mt-8 rounded-lg border border-line bg-white p-5">
@@ -138,6 +127,21 @@ function PreferenceSelect() {
         <option value="ALL_UPDATES">All updates</option>
         <option value="WEEKLY_DIGEST">Weekly digest only</option>
         <option value="VOTE_REMINDER_ONLY">Vote reminder only</option>
+      </select>
+    </label>
+  );
+}
+
+function ExportCsvSelect() {
+  return (
+    <label className="block">
+      <span className="text-sm font-medium">Export</span>
+      <select name="export" className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2">
+        <option value="ALL">All opted-in subscribers</option>
+        <option value="ALL_UPDATES">All updates subscribers</option>
+        <option value="WEEKLY_DIGEST">Weekly digest only subscribers</option>
+        <option value="VOTE_REMINDER_ONLY">Vote reminder only subscribers</option>
+        <option value="CAPTAINS">Captains</option>
       </select>
     </label>
   );
