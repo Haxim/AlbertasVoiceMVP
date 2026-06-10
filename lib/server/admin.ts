@@ -44,6 +44,19 @@ export async function exportSubscribersCsv(preference: PreferenceFilter) {
   return [header, ...body].join("\n");
 }
 
+export async function exportCaptainsCsv() {
+  const service = createServiceClient();
+  const { data, error } = await service
+    .from("profiles")
+    .select("name,email,created_at")
+    .eq("role", "CAPTAIN")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  const header = ["name", "email", "created_at"].join(",");
+  const body = (data || []).map((row) => [row.name, row.email, row.created_at].map(csvCell).join(","));
+  return [header, ...body].join("\n");
+}
+
 export async function sendEmailBroadcast({
   admin,
   audience,

@@ -18,10 +18,12 @@ export async function previewBroadcastAudience(formData: FormData) {
   redirect(`/admin/preview?preference=${preference}&count=${count}`);
 }
 
-export async function adminExportSubscribers(formData: FormData) {
+export async function adminExportCsv(formData: FormData) {
   await requireAdmin();
-  const preference = preferenceFilterSchema.parse(formData.get("preference") || "ALL");
-  redirect(`/api/admin/export?preference=${preference}`);
+  const selectedExport = formData.get("export") || "ALL";
+  if (selectedExport === "CAPTAINS") redirect("/api/admin/export?audience=CAPTAINS");
+  const preference = preferenceFilterSchema.parse(selectedExport);
+  redirect(`/api/admin/export?audience=SUBSCRIBERS&preference=${preference}`);
 }
 
 export async function sendEmailBroadcast(formData: FormData) {
