@@ -21,7 +21,12 @@ export async function previewBroadcastAudience(formData: FormData) {
 export async function adminExportSubscribers(formData: FormData) {
   await requireAdmin();
   const preference = preferenceFilterSchema.parse(formData.get("preference") || "ALL");
-  redirect(`/api/admin/export?preference=${preference}`);
+  redirect(`/api/admin/export?audience=SUBSCRIBERS&preference=${preference}`);
+}
+
+export async function adminExportCaptains(_formData: FormData) {
+  await requireAdmin();
+  redirect("/api/admin/export?audience=CAPTAINS");
 }
 
 export async function sendEmailBroadcast(formData: FormData) {

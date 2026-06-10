@@ -1,5 +1,11 @@
 import { redirect } from "next/navigation";
-import { adminExportSubscribers, previewBroadcastAudience, resumeEmailBroadcast, sendEmailBroadcast } from "@/lib/actions/admin";
+import {
+  adminExportCaptains,
+  adminExportSubscribers,
+  previewBroadcastAudience,
+  resumeEmailBroadcast,
+  sendEmailBroadcast
+} from "@/lib/actions/admin";
 import { getCurrentProfile, requireAdmin } from "@/lib/auth";
 import { getAdminCounts } from "@/lib/queries";
 import { Turnstile } from "@/components/turnstile";
@@ -38,9 +44,19 @@ export default async function AdminPage({
           <button className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white">Preview count</button>
         </form>
         <form action={adminExportSubscribers} className="space-y-4 rounded-lg border border-line bg-white p-5">
-          <h2 className="text-xl font-semibold">Export subscribers CSV</h2>
+          <h2 className="text-xl font-semibold">Export CSV</h2>
           <PreferenceSelect />
-          <button className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white">Download CSV</button>
+          <div className="flex flex-wrap gap-3">
+            <button className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white">
+              Download subscribers CSV
+            </button>
+            <button
+              formAction={adminExportCaptains}
+              className="focus-ring rounded-md border border-spruce px-4 py-2 font-semibold text-spruce"
+            >
+              Download captains CSV
+            </button>
+          </div>
         </form>
       </section>
       <section className="mt-8 rounded-lg border border-line bg-white p-5">
