@@ -100,7 +100,7 @@ export default async function DashboardPage({
         <h2 className="text-xl font-semibold">Message invitees</h2>
         <p className="mt-2 text-sm leading-6 text-ink/70">
           Invitees can reply to this message and replies will be forwarded to your email. They can also email you
-          directly at <span className="font-mono text-ink">{captainReplyAddress}</span>.
+          directly at <span className="font-mono text-ink">{captainReplyAddress}</span>
         </p>
         <form action={sendCaptainEmailMessage} className="mt-4 space-y-4">
           <label className="block">
