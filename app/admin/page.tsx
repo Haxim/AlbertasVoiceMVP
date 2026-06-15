@@ -36,18 +36,6 @@ export default async function AdminPage({
         <Metric label="Subscribers" value={counts.subscribers} />
         <Metric label="Suppressed" value={counts.suppressed} />
       </section>
-      <section className="mt-8 grid gap-6 md:grid-cols-2">
-        <form action={previewBroadcastAudience} className="space-y-4 rounded-lg border border-line bg-white p-5">
-          <h2 className="text-xl font-semibold">Preview audience</h2>
-          <PreferenceSelect />
-          <button className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white">Preview count</button>
-        </form>
-        <form action={adminExportCsv} className="space-y-4 rounded-lg border border-line bg-white p-5">
-          <h2 className="text-xl font-semibold">Export CSV</h2>
-          <ExportCsvSelect />
-          <button className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white">Download CSV</button>
-        </form>
-      </section>
       <section className="mt-8 rounded-lg border border-line bg-white p-5">
         <h2 className="text-xl font-semibold">Captain signup report</h2>
         <form action="/admin/captain-signups" className="mt-4 grid gap-4 md:grid-cols-4">
@@ -72,6 +60,18 @@ export default async function AdminPage({
           <div className="flex items-end">
             <button className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white">Run report</button>
           </div>
+        </form>
+      </section>
+      <section className="mt-8 grid gap-6 md:grid-cols-2">
+        <form action={previewBroadcastAudience} className="space-y-4 rounded-lg border border-line bg-white p-5">
+          <h2 className="text-xl font-semibold">Preview audience</h2>
+          <PreferenceSelect />
+          <button className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white">Preview count</button>
+        </form>
+        <form action={adminExportCsv} className="space-y-4 rounded-lg border border-line bg-white p-5">
+          <h2 className="text-xl font-semibold">Export CSV</h2>
+          <ExportCsvSelect />
+          <button className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white">Download CSV</button>
         </form>
       </section>
       <section className="mt-8 rounded-lg border border-line bg-white p-5">
