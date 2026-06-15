@@ -3,19 +3,22 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
-import { emailBroadcastSchema, preferenceFilterSchema } from "@/lib/validation";
+import { adminAudienceSelectionSchema, emailBroadcastSchema, preferenceFilterSchema } from "@/lib/validation";
 import {
   previewAudienceCount,
   resumeEmailBroadcast as resumeEmailBroadcastServer,
   sendEmailBroadcast as sendEmailBroadcastServer
 } from "@/lib/server/admin";
 import { getRequestIp, verifyTurnstileToken } from "@/lib/turnstile";
+import type { BroadcastAudience, PreferenceFilter } from "@/lib/types";
 
 export async function previewBroadcastAudience(formData: FormData) {
   await requireAdmin();
-  const preference = preferenceFilterSchema.parse(formData.get("preference") || "ALL");
-  const count = await previewAudienceCount(preference);
-  redirect(`/admin/preview?preference=${preference}&count=${count}`);
+  const selection = adminAudienceSelectionSchema.parse(formData.get("preference") || "ALL_UPDATES");
+  const audience = audienceForSelection(selection);
+  const preference = preferenceForSelection(selection);
+  const count = await previewAudienceCount(audience, preference);
+  redirect(`/admin/preview?selection=${selection}&audience=${audience}&count=${count}`);
 }
 
 export async function adminExportCsv(formData: FormData) {
@@ -30,7 +33,6 @@ export async function sendEmailBroadcast(formData: FormData) {
   const admin = await requireAdmin();
   const h = await headers();
   const parsed = emailBroadcastSchema.safeParse({
-    audience: formData.get("audience") || "SUBSCRIBERS",
     preference: formData.get("preference"),
     subject: formData.get("subject"),
     body: formData.get("body"),
@@ -43,10 +45,12 @@ export async function sendEmailBroadcast(formData: FormData) {
   let message = "Email sent.";
   try {
     await verifyTurnstileToken(formData.get("cf-turnstile-response"), getRequestIp(h));
+    const audience = audienceForSelection(parsed.data.preference);
+    const preference = preferenceForSelection(parsed.data.preference);
     const result = await sendEmailBroadcastServer({
       admin,
-      audience: parsed.data.audience,
-      preference: parsed.data.preference,
+      audience,
+      preference,
       subject: parsed.data.subject,
       body: parsed.data.body
     });
@@ -74,6 +78,14 @@ export async function resumeEmailBroadcast(formData: FormData) {
 
 function batchResultMessage(result: { sent: number; failed: number; remaining: number }) {
   return `Processed email batch: ${result.sent} sent, ${result.failed} failed, ${result.remaining} remaining.`;
+}
+
+function audienceForSelection(selection: string): BroadcastAudience {
+  return selection === "CAPTAINS" ? "CAPTAINS" : "SUBSCRIBERS";
+}
+
+function preferenceForSelection(selection: string): PreferenceFilter {
+  return selection === "CAPTAINS" ? "ALL" : preferenceFilterSchema.parse(selection);
 }
 
 function errorMessage(error: unknown, fallback: string) {

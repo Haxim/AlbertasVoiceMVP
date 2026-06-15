@@ -22,13 +22,9 @@ type CaptainAudienceRow = {
   email: string;
 };
 
-export async function previewAudienceCount(preference: PreferenceFilter) {
-  const service = createServiceClient();
-  let query = service.from("subscribers").select("id", { count: "exact", head: true }).is("unsubscribed_at", null);
-  if (preference !== "ALL") query = query.eq("preference", preference);
-  const { count, error } = await query;
-  if (error) throw error;
-  return count || 0;
+export async function previewAudienceCount(audience: BroadcastAudience, preference: PreferenceFilter) {
+  const recipients = await getEmailAudience(audience, preference);
+  return recipients.length;
 }
 
 export async function exportSubscribersCsv(preference: PreferenceFilter) {

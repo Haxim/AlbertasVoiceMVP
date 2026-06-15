@@ -45,7 +45,15 @@ export function filterSubscribersByPreference<T extends { preference: Preference
   rows: T[],
   preference: PreferenceFilter
 ) {
-  return rows.filter((row) => !row.unsubscribed_at && (preference === "ALL" || row.preference === preference));
+  const includedPreferences = preferencesIncludedForBroadcast(preference);
+  return rows.filter((row) => !row.unsubscribed_at && includedPreferences.includes(row.preference));
+}
+
+function preferencesIncludedForBroadcast(preference: PreferenceFilter): Preference[] {
+  if (preference === "ALL") return ["ALL_UPDATES", "WEEKLY_DIGEST", "VOTE_REMINDER_ONLY"];
+  if (preference === "WEEKLY_DIGEST") return ["ALL_UPDATES", "WEEKLY_DIGEST"];
+  if (preference === "VOTE_REMINDER_ONLY") return ["ALL_UPDATES", "WEEKLY_DIGEST", "VOTE_REMINDER_ONLY"];
+  return [preference];
 }
 
 export function captainCanAccessInvite(captainId: string, invite: { captain_id: string }) {

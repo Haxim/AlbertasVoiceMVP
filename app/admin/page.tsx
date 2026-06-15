@@ -51,13 +51,6 @@ export default async function AdminPage({
       <section className="mt-8 rounded-lg border border-line bg-white p-5">
         <h2 className="text-xl font-semibold">Send email broadcast</h2>
         <form action={sendEmailBroadcast} className="mt-4 space-y-4">
-          <label className="block">
-            <span className="text-sm font-medium">Audience</span>
-            <select name="audience" className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2">
-              <option value="SUBSCRIBERS">Opted-in subscribers</option>
-              <option value="CAPTAINS">Captains only</option>
-            </select>
-          </label>
           <PreferenceSelect />
           <label className="block">
             <span className="text-sm font-medium">Subject</span>
@@ -123,10 +116,11 @@ function PreferenceSelect() {
     <label className="block">
       <span className="text-sm font-medium">Preference</span>
       <select name="preference" className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2">
-        <option value="ALL">All opted-in subscribers</option>
         <option value="ALL_UPDATES">All updates</option>
         <option value="WEEKLY_DIGEST">Weekly digest only</option>
         <option value="VOTE_REMINDER_ONLY">Vote reminder only</option>
+        <option value="CAPTAINS">Captains only</option>
+        <option value="ALL">All Contacts (Emergency Broadcast)</option>
       </select>
     </label>
   );
@@ -137,11 +131,11 @@ function ExportCsvSelect() {
     <label className="block">
       <span className="text-sm font-medium">Export</span>
       <select name="export" className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2">
-        <option value="ALL">All opted-in subscribers</option>
         <option value="ALL_UPDATES">All updates subscribers</option>
         <option value="WEEKLY_DIGEST">Weekly digest only subscribers</option>
         <option value="VOTE_REMINDER_ONLY">Vote reminder only subscribers</option>
         <option value="CAPTAINS">Captains</option>
+        <option value="ALL">All Contacts (Emergency Broadcast)</option>
       </select>
     </label>
   );

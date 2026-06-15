@@ -28,14 +28,17 @@ describe("referral rules", () => {
     expect(duplicate).toBe(false);
   });
 
-  it("filters accepted subscribers by preference and excludes unsubscribed rows", () => {
+  it("filters accepted subscribers by broadcast preference and excludes unsubscribed rows", () => {
     const rows = [
       { preference: "ALL_UPDATES" as const, unsubscribed_at: null },
       { preference: "WEEKLY_DIGEST" as const, unsubscribed_at: null },
+      { preference: "VOTE_REMINDER_ONLY" as const, unsubscribed_at: null },
       { preference: "WEEKLY_DIGEST" as const, unsubscribed_at: "2026-05-21T00:00:00Z" }
     ];
-    expect(filterSubscribersByPreference(rows, "WEEKLY_DIGEST")).toHaveLength(1);
-    expect(filterSubscribersByPreference(rows, "ALL")).toHaveLength(2);
+    expect(filterSubscribersByPreference(rows, "ALL_UPDATES")).toHaveLength(1);
+    expect(filterSubscribersByPreference(rows, "WEEKLY_DIGEST")).toHaveLength(2);
+    expect(filterSubscribersByPreference(rows, "VOTE_REMINDER_ONLY")).toHaveLength(3);
+    expect(filterSubscribersByPreference(rows, "ALL")).toHaveLength(3);
   });
 
   it("enforces captain access restrictions", () => {
