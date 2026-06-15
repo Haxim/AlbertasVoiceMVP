@@ -49,6 +49,32 @@ export default async function AdminPage({
         </form>
       </section>
       <section className="mt-8 rounded-lg border border-line bg-white p-5">
+        <h2 className="text-xl font-semibold">Captain signup report</h2>
+        <form action="/admin/captain-signups" className="mt-4 grid gap-4 md:grid-cols-4">
+          <label className="block">
+            <span className="text-sm font-medium">Start date</span>
+            <input name="startDate" type="date" className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium">End date</span>
+            <input name="endDate" type="date" className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
+          </label>
+          <label className="block">
+            <span className="text-sm font-medium">Minimum signups</span>
+            <input
+              name="minSignups"
+              type="number"
+              min="0"
+              defaultValue="20"
+              className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2"
+            />
+          </label>
+          <div className="flex items-end">
+            <button className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white">Run report</button>
+          </div>
+        </form>
+      </section>
+      <section className="mt-8 rounded-lg border border-line bg-white p-5">
         <h2 className="text-xl font-semibold">Send email broadcast</h2>
         <form action={sendEmailBroadcast} className="mt-4 space-y-4">
           <PreferenceSelect />

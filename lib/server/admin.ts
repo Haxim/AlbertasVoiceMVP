@@ -22,6 +22,29 @@ type CaptainAudienceRow = {
   email: string;
 };
 
+export type CaptainSignupReportFilters = {
+  startDate?: string;
+  endDate?: string;
+  minSignups: number;
+};
+
+export type CaptainSignupReportRow = {
+  captainId: string;
+  captainName: string;
+  captainEmail: string;
+  verifiedSignups: number;
+  activeContacts: number;
+  firstSignupAt: string;
+  lastSignupAt: string;
+};
+
+type CaptainSignupSourceRow = {
+  captain_id?: string | null;
+  consented_at?: string | null;
+  unsubscribed_at?: string | null;
+  profiles?: { name?: string | null; email?: string | null } | Array<{ name?: string | null; email?: string | null }> | null;
+};
+
 export async function previewAudienceCount(audience: BroadcastAudience, preference: PreferenceFilter) {
   const recipients = await getEmailAudience(audience, preference);
   return recipients.length;
@@ -50,6 +73,65 @@ export async function exportCaptainsCsv() {
   if (error) throw error;
   const header = ["name", "email", "created_at"].join(",");
   const body = (data || []).map((row) => [row.name, row.email, row.created_at].map(csvCell).join(","));
+  return [header, ...body].join("\n");
+}
+
+export async function getCaptainSignupReport(filters: CaptainSignupReportFilters) {
+  const service = createServiceClient();
+  let query = service
+    .from("subscribers")
+    .select("captain_id,consented_at,unsubscribed_at,profiles:captain_id(name,email)")
+    .not("captain_id", "is", null)
+    .not("consented_at", "is", null)
+    .order("consented_at", { ascending: true });
+
+  if (filters.startDate) query = query.gte("consented_at", startOfDate(filters.startDate));
+  if (filters.endDate) query = query.lt("consented_at", dayAfter(filters.endDate));
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return buildCaptainSignupReportRows(data || [], filters.minSignups);
+}
+
+export function buildCaptainSignupReportRows(rows: CaptainSignupSourceRow[], minSignups: number) {
+  const rowsByCaptain = new Map<string, CaptainSignupReportRow>();
+  for (const subscriber of rows) {
+    const captainId = String(subscriber.captain_id || "");
+    if (!captainId || !subscriber.consented_at) continue;
+    const profile = Array.isArray(subscriber.profiles) ? subscriber.profiles[0] : subscriber.profiles;
+    const current = rowsByCaptain.get(captainId);
+    if (current) {
+      current.verifiedSignups += 1;
+      if (!subscriber.unsubscribed_at) current.activeContacts += 1;
+      current.firstSignupAt = current.firstSignupAt < subscriber.consented_at ? current.firstSignupAt : subscriber.consented_at;
+      current.lastSignupAt = current.lastSignupAt > subscriber.consented_at ? current.lastSignupAt : subscriber.consented_at;
+      continue;
+    }
+    rowsByCaptain.set(captainId, {
+      captainId,
+      captainName: profile?.name?.trim() || profile?.email?.trim() || "Captain",
+      captainEmail: profile?.email?.trim() || "",
+      verifiedSignups: 1,
+      activeContacts: subscriber.unsubscribed_at ? 0 : 1,
+      firstSignupAt: subscriber.consented_at,
+      lastSignupAt: subscriber.consented_at
+    });
+  }
+
+  return Array.from(rowsByCaptain.values())
+    .filter((row) => row.verifiedSignups >= minSignups)
+    .sort((a, b) => b.verifiedSignups - a.verifiedSignups || a.captainName.localeCompare(b.captainName));
+}
+
+export async function exportCaptainSignupReportCsv(filters: CaptainSignupReportFilters) {
+  const rows = await getCaptainSignupReport(filters);
+  const header = ["captain_name", "captain_email", "verified_signups", "active_contacts", "first_signup_at", "last_signup_at"].join(",");
+  const body = rows.map((row) =>
+    [row.captainName, row.captainEmail, row.verifiedSignups, row.activeContacts, row.firstSignupAt, row.lastSignupAt]
+      .map(csvCell)
+      .join(",")
+  );
   return [header, ...body].join("\n");
 }
 
@@ -308,6 +390,16 @@ function emailBatchIdempotencyKey(broadcastId: string, batch: Array<{ id: string
 function csvCell(value: unknown) {
   const text = value == null ? "" : String(value);
   return `"${text.replace(/"/g, '""')}"`;
+}
+
+function startOfDate(date: string) {
+  return `${date}T00:00:00.000Z`;
+}
+
+function dayAfter(date: string) {
+  const parsed = new Date(`${date}T00:00:00.000Z`);
+  parsed.setUTCDate(parsed.getUTCDate() + 1);
+  return parsed.toISOString();
 }
 
 function senderNameForSubscriber(subscriber: { profiles?: { name?: string | null } | Array<{ name?: string | null }> | null }) {

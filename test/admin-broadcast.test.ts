@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { personalizeBroadcastBody, personalizeCaptainBroadcastBody } from "@/lib/server/admin";
+import { buildCaptainSignupReportRows, personalizeBroadcastBody, personalizeCaptainBroadcastBody } from "@/lib/server/admin";
 
 describe("broadcast body personalization", () => {
   it("replaces placeholders with the subscriber and captain names", () => {
@@ -27,5 +27,43 @@ describe("broadcast body personalization", () => {
     });
 
     expect(body).toBe("Hi Captain One, this is for Captain One.");
+  });
+
+  it("builds captain signup report rows with thresholds and active counts", () => {
+    const rows = buildCaptainSignupReportRows(
+      [
+        {
+          captain_id: "captain-a",
+          consented_at: "2026-05-01T12:00:00Z",
+          unsubscribed_at: null,
+          profiles: { name: "Captain A", email: "a@example.test" }
+        },
+        {
+          captain_id: "captain-a",
+          consented_at: "2026-05-02T12:00:00Z",
+          unsubscribed_at: "2026-05-03T12:00:00Z",
+          profiles: { name: "Captain A", email: "a@example.test" }
+        },
+        {
+          captain_id: "captain-b",
+          consented_at: "2026-05-04T12:00:00Z",
+          unsubscribed_at: null,
+          profiles: { name: "Captain B", email: "b@example.test" }
+        }
+      ],
+      2
+    );
+
+    expect(rows).toEqual([
+      {
+        captainId: "captain-a",
+        captainName: "Captain A",
+        captainEmail: "a@example.test",
+        verifiedSignups: 2,
+        activeContacts: 1,
+        firstSignupAt: "2026-05-01T12:00:00Z",
+        lastSignupAt: "2026-05-02T12:00:00Z"
+      }
+    ]);
   });
 });
