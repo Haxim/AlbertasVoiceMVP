@@ -52,7 +52,7 @@ export async function sendCaptainEmailMessage({
 
 export async function replyToAddressForCaptain(captain: Profile) {
   const alias = await ensureCaptainEmailAlias(captain);
-  return `updates+${alias}@${CAPTAIN_REPLY_DOMAIN}`;
+  return `${alias}@${CAPTAIN_REPLY_DOMAIN}`;
 }
 
 async function ensureCaptainEmailAlias(captain: Profile) {
@@ -74,7 +74,7 @@ async function ensureCaptainEmailAlias(captain: Profile) {
   const existingAlias = existing?.captain_email_alias?.trim();
   if (existingAlias) return existingAlias;
 
-  const alias = `cpt_${crypto.randomBytes(8).toString("hex")}`;
+  const alias = `cpt_${crypto.randomBytes(4).toString("hex")}`;
   const { error: updateError } = await service.from("profiles").update({ captain_email_alias: alias }).eq("id", captain.id);
   if (updateError) throw updateError;
   return alias;

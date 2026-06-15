@@ -8,6 +8,7 @@ afterEach(() => {
 
 describe("captain reply aliases", () => {
   it("extracts captain aliases from the join reply-to domain", () => {
+    expect(extractCaptainAlias(["Captain <cpt_abc123@join.albertasvoice.ca>"])).toBe("cpt_abc123");
     expect(extractCaptainAlias(["Updates <updates+cpt_abc123@join.albertasvoice.ca>"])).toBe("cpt_abc123");
     expect(extractCaptainAlias(["updates+cpt_abc123@example.test"])).toBeNull();
   });

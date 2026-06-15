@@ -64,7 +64,7 @@ export async function processCaptainReplyWebhook({
 export function extractCaptainAlias(recipients: string[]) {
   for (const recipient of recipients) {
     const address = extractEmailAddress(recipient).toLowerCase();
-    const match = address.match(new RegExp(`^updates\\+([a-z0-9_]+)@${escapeRegExp(CAPTAIN_REPLY_DOMAIN)}$`));
+    const match = address.match(new RegExp(`^(?:updates\\+)?(cpt_[a-z0-9]+)@${escapeRegExp(CAPTAIN_REPLY_DOMAIN)}$`));
     if (match) return match[1];
   }
   return null;
