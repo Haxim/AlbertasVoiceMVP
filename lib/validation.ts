@@ -36,6 +36,11 @@ export const updateSubscriptionSchema = z.object({
 export const preferenceFilterSchema = z.enum(["ALL", "ALL_UPDATES", "WEEKLY_DIGEST", "VOTE_REMINDER_ONLY"]);
 export const broadcastAudienceSchema = z.enum(["SUBSCRIBERS", "CAPTAINS"]);
 export const adminAudienceSelectionSchema = z.enum(["ALL_UPDATES", "WEEKLY_DIGEST", "VOTE_REMINDER_ONLY", "CAPTAINS", "ALL"]);
+export const captainSignupReportSchema = z.object({
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
+  minSignups: z.coerce.number().int().min(0).max(100000).default(20)
+});
 
 export const emailBroadcastSchema = z.object({
   preference: adminAudienceSelectionSchema,
