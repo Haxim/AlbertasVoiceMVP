@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { extractCaptainAlias, verifyResendWebhook } from "@/lib/server/captain-replies";
+import { extractCaptainAlias, splitReplyText, verifyResendWebhook } from "@/lib/server/captain-replies";
 
 afterEach(() => {
   vi.useRealTimers();
@@ -34,6 +34,42 @@ describe("Resend webhook verification", () => {
     expect(verifyResendWebhook(payload, headers, secret)).toEqual({
       type: "email.received",
       data: { email_id: "email-id" }
+    });
+  });
+});
+
+describe("captain reply body splitting", () => {
+  it("separates Gmail quoted original messages", () => {
+    const body = `testing a reply to captain
+
+On Mon, Jun 15, 2026 at 12:50 PM Stephen Elas on behalf of Alberta's
+Voice <updates+cpt_f23b@join.albertasvoice.ca> wrote:
+
+> [image: Alberta's Voice] Alberta's Voice
+> A Voice for Every Albertan
+> Original campaign message`;
+
+    expect(splitReplyText(body)).toEqual({
+      visibleText: "testing a reply to captain",
+      quotedText: `On Mon, Jun 15, 2026 at 12:50 PM Stephen Elas on behalf of Alberta's
+Voice <updates+cpt_f23b@join.albertasvoice.ca> wrote:
+
+> [image: Alberta's Voice] Alberta's Voice
+> A Voice for Every Albertan
+> Original campaign message`
+    });
+  });
+
+  it("separates quote-only blocks without a wrote header", () => {
+    const body = `Fresh reply line
+
+> Prior message line
+> Prior message line 2`;
+
+    expect(splitReplyText(body)).toEqual({
+      visibleText: "Fresh reply line",
+      quotedText: `> Prior message line
+> Prior message line 2`
     });
   });
 });
