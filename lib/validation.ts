@@ -35,10 +35,10 @@ export const updateSubscriptionSchema = z.object({
 
 export const preferenceFilterSchema = z.enum(["ALL", "ALL_UPDATES", "WEEKLY_DIGEST", "VOTE_REMINDER_ONLY"]);
 export const broadcastAudienceSchema = z.enum(["SUBSCRIBERS", "CAPTAINS"]);
+export const adminAudienceSelectionSchema = z.enum(["ALL_UPDATES", "WEEKLY_DIGEST", "VOTE_REMINDER_ONLY", "CAPTAINS", "ALL"]);
 
 export const emailBroadcastSchema = z.object({
-  audience: broadcastAudienceSchema,
-  preference: preferenceFilterSchema,
+  preference: adminAudienceSelectionSchema,
   subject: z.string().trim().min(3).max(160),
   body: z.string().trim().min(10).max(5000),
   confirmConsent: z.literal("yes")
