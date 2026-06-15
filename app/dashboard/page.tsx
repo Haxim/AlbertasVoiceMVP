@@ -7,6 +7,7 @@ import { getCurrentProfile } from "@/lib/auth";
 import { StatusBadge } from "@/components/status-badge";
 import { Turnstile } from "@/components/turnstile";
 import { runtimeEnv } from "@/lib/runtime-env";
+import { replyToAddressForCaptain } from "@/lib/server/captain-messages";
 
 export default async function DashboardPage({
   searchParams
@@ -18,6 +19,7 @@ export default async function DashboardPage({
   if (!profile) redirect("/login");
   const dashboard = await getCaptainDashboard(profile.id);
   const turnstileSiteKey = await runtimeEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY");
+  const captainReplyAddress = await replyToAddressForCaptain(profile);
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
@@ -96,6 +98,10 @@ export default async function DashboardPage({
 
       <section className="mt-8 rounded-lg border border-line bg-white p-5">
         <h2 className="text-xl font-semibold">Message invitees</h2>
+        <p className="mt-2 text-sm leading-6 text-ink/70">
+          Invitees can reply to this message and replies will be forwarded to your email. They can also email you
+          directly at <span className="font-mono text-ink">{captainReplyAddress}</span>.
+        </p>
         <form action={sendCaptainEmailMessage} className="mt-4 space-y-4">
           <label className="block">
             <span className="text-sm font-medium">Subject</span>

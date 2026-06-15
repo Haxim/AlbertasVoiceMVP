@@ -64,7 +64,7 @@ export async function processCaptainReplyWebhook({
 export function extractCaptainAlias(recipients: string[]) {
   for (const recipient of recipients) {
     const address = extractEmailAddress(recipient).toLowerCase();
-    const match = address.match(new RegExp(`^updates\\+([a-z0-9_]+)@${escapeRegExp(CAPTAIN_REPLY_DOMAIN)}$`));
+    const match = address.match(new RegExp(`^(?:updates\\+)?(cpt_[a-z0-9]+)@${escapeRegExp(CAPTAIN_REPLY_DOMAIN)}$`));
     if (match) return match[1];
   }
   return null;
@@ -134,7 +134,9 @@ async function forwardReplyToCaptain({
   received: { from: string; subject: string; to: string[]; text?: string | null; html?: string | null };
 }) {
   const subject = `Reply to your Alberta's Voice message: ${received.subject}`;
-  const bodyText = received.text?.trim() || htmlToPlainText(received.html || "") || "(No plain text body was provided.)";
+  const rawBodyText = received.text?.trim() || htmlToPlainText(received.html || "");
+  const replyParts = splitReplyText(rawBodyText);
+  const bodyText = replyParts.visibleText || rawBodyText || "(No plain text body was provided.)";
   const text = `Hi ${captainName},
 
 Someone replied to a direct email you sent through Alberta's Voice.
@@ -156,7 +158,8 @@ This is a one-way masked forward. Replying from your personal inbox may expose y
 <strong>To:</strong> ${escapeHtml(received.to.join(", "))}<br>
 <strong>Subject:</strong> ${escapeHtml(received.subject)}</p>
 <hr>
-<pre style="white-space:pre-wrap;font-family:Arial,sans-serif;line-height:1.5;">${escapeHtml(bodyText)}</pre>
+<div style="font-family:Arial,sans-serif;line-height:1.5;">${plainTextToHtml(bodyText)}</div>
+${replyParts.quotedText ? renderGmailQuote(replyParts.quotedText) : ""}
 <p style="color:#6b7280;font-size:14px;">This is a one-way masked forward. Replying from your personal inbox may expose your email address.</p>`;
 
   await sendEmail({
@@ -174,6 +177,39 @@ function extractEmailAddress(value: string) {
   return value.match(/<([^>]+)>/)?.[1]?.trim() || value.trim();
 }
 
+export function splitReplyText(text: string) {
+  const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+  const quoteStart = findQuotedReplyStart(lines);
+  if (quoteStart === -1) return { visibleText: lines.join("\n").trim(), quotedText: "" };
+
+  return {
+    visibleText: lines.slice(0, quoteStart).join("\n").trim(),
+    quotedText: lines.slice(quoteStart).join("\n").trim()
+  };
+}
+
+function findQuotedReplyStart(lines: string[]) {
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index].trim();
+    const previousLine = lines[index - 1]?.trim() || "";
+
+    if (!line) continue;
+    if (/^-{2,}\s*original message\s*-{2,}$/i.test(line)) return index;
+    if (/^_{5,}$/.test(line)) return index;
+    if (/^>/.test(line)) return index;
+    if (/\bwrote:\s*$/i.test(line)) return previousLine.toLowerCase().startsWith("on ") ? index - 1 : index;
+    if (/^from:\s.+/i.test(line) && looksLikeForwardedHeader(lines, index)) return index;
+  }
+  return -1;
+}
+
+function looksLikeForwardedHeader(lines: string[], startIndex: number) {
+  const headerWindow = lines.slice(startIndex, startIndex + 6).map((line) => line.trim().toLowerCase());
+  return headerWindow.some((line) => line.startsWith("sent:") || line.startsWith("date:")) &&
+    headerWindow.some((line) => line.startsWith("to:")) &&
+    headerWindow.some((line) => line.startsWith("subject:"));
+}
+
 function htmlToPlainText(html: string) {
   return html
     .replace(/<br\s*\/?>/gi, "\n")
@@ -186,6 +222,29 @@ function htmlToPlainText(html: string) {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .trim();
+}
+
+function plainTextToHtml(text: string) {
+  return text
+    .split(/\n{2,}/)
+    .map((block) => `<p style="margin:0 0 14px 0;">${escapeHtml(block).replace(/\n/g, "<br>")}</p>`)
+    .join("");
+}
+
+function renderGmailQuote(text: string) {
+  const lines = text.split("\n");
+  const headerEnd = lines.findIndex((line) => /\bwrote:\s*$/i.test(line.trim()));
+  const headerLines = headerEnd >= 0 ? lines.slice(0, headerEnd + 1) : [];
+  const quotedLines = (headerEnd >= 0 ? lines.slice(headerEnd + 1) : lines).map((line) => line.replace(/^>\s?/, ""));
+  const header = headerLines.join("\n").trim();
+  const quoted = quotedLines.join("\n").trim();
+
+  return `<div class="gmail_quote" style="margin-top:16px;">
+${header ? `<div dir="ltr" class="gmail_attr">${escapeHtml(header).replace(/\n/g, "<br>")}</div>` : ""}
+<blockquote class="gmail_quote" style="margin:0 0 0 0.8ex;border-left:1px solid #ccc;padding-left:1ex;">
+${plainTextToHtml(quoted || text)}
+</blockquote>
+</div>`;
 }
 
 function escapeHtml(value: string) {
