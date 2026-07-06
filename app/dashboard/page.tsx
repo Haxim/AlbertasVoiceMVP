@@ -77,7 +77,6 @@ export default async function DashboardPage({
                   <th className="px-4 py-3">Contact</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Created</th>
-                  <th className="px-4 py-3">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -87,28 +86,28 @@ export default async function DashboardPage({
                     <tr key={invite.id} className="border-t border-line">
                       <td className="px-4 py-3 font-medium">{invite.invitee_name}</td>
                       <td className="px-4 py-3 text-ink/70">{invite.invitee_phone || invite.invitee_email}</td>
-                      <td className="px-4 py-3"><StatusBadge status={invite.status} /></td>
-                      <td className="px-4 py-3 text-ink/60">{new Date(invite.created_at).toLocaleDateString()}</td>
                       <td className="px-4 py-3">
+                        <div className="flex flex-col items-start gap-1.5">
+                          <StatusBadge status={invite.status} />
                         {invite.status === "PENDING" ? (
                           <form action={resendInviteEmail}>
                             <input type="hidden" name="inviteId" value={invite.id} />
                             <button
-                              className="focus-ring rounded-md border border-line bg-white px-3 py-1.5 font-medium disabled:cursor-not-allowed disabled:bg-field disabled:text-ink/50"
+                              className="focus-ring rounded-full bg-field px-2.5 py-1 text-xs font-semibold text-spruce disabled:cursor-not-allowed disabled:text-ink/45"
                               disabled={!resend.canResend}
                             >
-                              {resend.canResend ? "Resend" : `Wait ${resend.remainingMinutes}m`}
+                              {resend.canResend ? "Resend email" : `Resend in ${resend.remainingMinutes}m`}
                             </button>
                           </form>
-                        ) : (
-                          <span className="text-ink/40">-</span>
-                        )}
+                        ) : null}
+                        </div>
                       </td>
+                      <td className="px-4 py-3 text-ink/60">{new Date(invite.created_at).toLocaleDateString()}</td>
                     </tr>
                   );
                 })}
                 {dashboard.invites.length === 0 ? (
-                  <tr><td colSpan={5} className="px-4 py-8 text-center text-ink/60">No invites yet.</td></tr>
+                  <tr><td colSpan={4} className="px-4 py-8 text-center text-ink/60">No invites yet.</td></tr>
                 ) : null}
               </tbody>
             </table>
