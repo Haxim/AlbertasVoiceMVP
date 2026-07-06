@@ -8,6 +8,7 @@ import { runtimeEnv } from "@/lib/runtime-env";
 import type { Preference, Profile } from "@/lib/types";
 
 export type InviteDeliveryStatus = "sent" | "skipped" | "none";
+export const INVITE_EMAIL_RESEND_COOLDOWN_MS = 15 * 60 * 1000;
 
 export async function createInviteForCaptain(
   captain: Profile,
@@ -88,6 +89,39 @@ export async function createInviteForCaptain(
     }
   }
   return { invite: data, delivery };
+}
+
+export async function resendInviteEmailForCaptain(captain: Profile, inviteId: string) {
+  const service = createServiceClient();
+  const { data: invite, error } = await service.from("invites").select("*").eq("id", inviteId).single();
+  if (error || !invite) throw new Error("Invite not found.");
+  if (invite.captain_id !== captain.id) throw new Error("Invite not found.");
+  if (invite.status !== "PENDING") throw new Error("Only pending invites can be resent.");
+  if (!invite.normalized_email) throw new Error("This invite does not have an email address.");
+
+  const latestSentAt = await getLatestEmailInviteSentAt(invite.id);
+  const availability = getInviteEmailResendAvailability(latestSentAt || invite.created_at);
+  if (!availability.canResend) {
+    throw new Error(`Please wait ${availability.remainingMinutes} minute${availability.remainingMinutes === 1 ? "" : "s"} before resending this invite.`);
+  }
+
+  const captainName = captain.name || "A local captain";
+  await sendEmail({
+    to: invite.normalized_email,
+    subject: emailInviteSubject(captainName),
+    text: await emailInviteText(captainName, invite),
+    html: await emailInviteHtml(captainName, invite),
+    fromName: `${captainName} on behalf of Alberta's Voice`,
+    fromEmailEnv: "INVITE_FROM_EMAIL",
+    idempotencyKey: `invite-resend/${invite.id}/${Math.floor(Date.now() / INVITE_EMAIL_RESEND_COOLDOWN_MS)}`
+  });
+
+  await logConsentEvent({
+    invite_id: invite.id,
+    event_type: "INVITE_RESENT",
+    channel: "EMAIL",
+    metadata: { captain_id: captain.id }
+  });
 }
 
 export async function acceptInviteByToken(
@@ -179,6 +213,29 @@ type RequestMeta = {
   ip?: string | null;
   userAgent?: string | null;
 };
+
+export function getInviteEmailResendAvailability(lastSentAt: string | null, now = new Date()) {
+  if (!lastSentAt) return { canResend: true, remainingMinutes: 0 };
+  const elapsedMs = now.getTime() - new Date(lastSentAt).getTime();
+  const remainingMs = INVITE_EMAIL_RESEND_COOLDOWN_MS - elapsedMs;
+  if (remainingMs <= 0) return { canResend: true, remainingMinutes: 0 };
+  return { canResend: false, remainingMinutes: Math.ceil(remainingMs / (60 * 1000)) };
+}
+
+async function getLatestEmailInviteSentAt(inviteId: string) {
+  const service = createServiceClient();
+  const { data, error } = await service
+    .from("consent_events")
+    .select("created_at")
+    .eq("invite_id", inviteId)
+    .eq("channel", "EMAIL")
+    .in("event_type", ["INVITE_SENT", "INVITE_RESENT"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.created_at || null;
+}
 
 async function findContactRows(table: "invites" | "subscribers" | "suppression_list", email: string | null, phone: string | null) {
   const service = createServiceClient();

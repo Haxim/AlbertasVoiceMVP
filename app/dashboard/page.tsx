@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createInvite } from "@/lib/actions/invites";
+import { createInvite, resendInviteEmail } from "@/lib/actions/invites";
 import { sendCaptainEmailMessage } from "@/lib/actions/captain-messages";
 import { logout } from "@/lib/actions/auth";
 import { getCaptainDashboard } from "@/lib/queries";
@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { Turnstile } from "@/components/turnstile";
 import { runtimeEnv } from "@/lib/runtime-env";
 import { replyToAddressForCaptain } from "@/lib/server/captain-messages";
+import { getInviteEmailResendAvailability } from "@/lib/server/invites";
 
 export default async function DashboardPage({
   searchParams
@@ -79,14 +80,32 @@ export default async function DashboardPage({
                 </tr>
               </thead>
               <tbody>
-                {dashboard.invites.map((invite) => (
-                  <tr key={invite.id} className="border-t border-line">
-                    <td className="px-4 py-3 font-medium">{invite.invitee_name}</td>
-                    <td className="px-4 py-3 text-ink/70">{invite.invitee_phone || invite.invitee_email}</td>
-                    <td className="px-4 py-3"><StatusBadge status={invite.status} /></td>
-                    <td className="px-4 py-3 text-ink/60">{new Date(invite.created_at).toLocaleDateString()}</td>
-                  </tr>
-                ))}
+                {dashboard.invites.map((invite) => {
+                  const resend = getInviteEmailResendAvailability(invite.last_email_invite_sent_at);
+                  return (
+                    <tr key={invite.id} className="border-t border-line">
+                      <td className="px-4 py-3 font-medium">{invite.invitee_name}</td>
+                      <td className="px-4 py-3 text-ink/70">{invite.invitee_phone || invite.invitee_email}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col items-start gap-1.5">
+                          <StatusBadge status={invite.status} />
+                        {invite.status === "PENDING" ? (
+                          <form action={resendInviteEmail}>
+                            <input type="hidden" name="inviteId" value={invite.id} />
+                            <button
+                              className="focus-ring rounded-full bg-field px-2.5 py-1 text-xs font-semibold text-spruce disabled:cursor-not-allowed disabled:text-ink/45"
+                              disabled={!resend.canResend}
+                            >
+                              {resend.canResend ? "Resend email" : `Resend in ${resend.remainingMinutes}m`}
+                            </button>
+                          </form>
+                        ) : null}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-ink/60">{new Date(invite.created_at).toLocaleDateString()}</td>
+                    </tr>
+                  );
+                })}
                 {dashboard.invites.length === 0 ? (
                   <tr><td colSpan={4} className="px-4 py-8 text-center text-ink/60">No invites yet.</td></tr>
                 ) : null}

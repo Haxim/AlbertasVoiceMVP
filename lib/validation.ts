@@ -23,6 +23,10 @@ export const tokenSchema = z.object({
   token: z.string().min(20)
 });
 
+export const resendInviteSchema = z.object({
+  inviteId: z.string().uuid()
+});
+
 export const subscriptionTokenSchema = z.object({
   token: z.string().min(20)
 });

@@ -1,6 +1,6 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { createServiceClient, createSupabaseServerClient } from "@/lib/supabase/server";
-import type { Invite } from "@/lib/types";
+import type { DashboardInvite, Invite } from "@/lib/types";
 
 export async function getCaptainDashboard(captainId: string) {
   noStore();
@@ -12,11 +12,39 @@ export async function getCaptainDashboard(captainId: string) {
     .order("created_at", { ascending: false });
   if (error) throw error;
   const rows = (invites || []) as Invite[];
+  const latestEmailEvents = await getLatestEmailInviteEvents(rows);
+  const dashboardInvites: DashboardInvite[] = rows.map((invite) => ({
+    ...invite,
+    last_email_invite_sent_at: latestEmailEvents.get(invite.id) || (invite.normalized_email ? invite.created_at : null)
+  }));
   return {
-    invites: rows,
-    referralCount: rows.filter((invite) => invite.status === "ACCEPTED").length,
-    pendingCount: rows.filter((invite) => invite.status === "PENDING").length
+    invites: dashboardInvites,
+    referralCount: dashboardInvites.filter((invite) => invite.status === "ACCEPTED").length,
+    pendingCount: dashboardInvites.filter((invite) => invite.status === "PENDING").length
   };
+}
+
+async function getLatestEmailInviteEvents(invites: Invite[]) {
+  const inviteIds = invites.map((invite) => invite.id);
+  const latestByInvite = new Map<string, string>();
+  if (!inviteIds.length) return latestByInvite;
+
+  const service = createServiceClient();
+  const { data, error } = await service
+    .from("consent_events")
+    .select("invite_id, created_at")
+    .in("invite_id", inviteIds)
+    .eq("channel", "EMAIL")
+    .in("event_type", ["INVITE_SENT", "INVITE_RESENT"])
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+
+  for (const event of data || []) {
+    if (event.invite_id && !latestByInvite.has(event.invite_id)) {
+      latestByInvite.set(event.invite_id, event.created_at);
+    }
+  }
+  return latestByInvite;
 }
 
 export async function getInviteByToken(token: string) {
