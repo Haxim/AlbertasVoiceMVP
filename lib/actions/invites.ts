@@ -3,8 +3,8 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireCaptain } from "@/lib/auth";
-import { acceptInviteSchema, createInviteSchema, tokenSchema } from "@/lib/validation";
-import { acceptInviteByToken, createInviteForCaptain, declineInviteByToken } from "@/lib/server/invites";
+import { acceptInviteSchema, createInviteSchema, resendInviteSchema, tokenSchema } from "@/lib/validation";
+import { acceptInviteByToken, createInviteForCaptain, declineInviteByToken, resendInviteEmailForCaptain } from "@/lib/server/invites";
 import { getRequestIp, verifyTurnstileToken } from "@/lib/turnstile";
 
 export async function createInvite(formData: FormData) {
@@ -25,6 +25,20 @@ export async function createInvite(formData: FormData) {
     redirect(`/dashboard?error=${encodeURIComponent(error instanceof Error ? error.message : "Invite failed.")}`);
   }
   redirect(`/dashboard?message=${encodeURIComponent(message)}`);
+}
+
+export async function resendInviteEmail(formData: FormData) {
+  const captain = await requireCaptain();
+  const parsed = resendInviteSchema.safeParse({
+    inviteId: formData.get("inviteId")
+  });
+  if (!parsed.success) redirect(`/dashboard?error=${encodeURIComponent("Invalid invite.")}`);
+  try {
+    await resendInviteEmailForCaptain(captain, parsed.data.inviteId);
+  } catch (error) {
+    redirect(`/dashboard?error=${encodeURIComponent(error instanceof Error ? error.message : "Invite resend failed.")}`);
+  }
+  redirect(`/dashboard?message=${encodeURIComponent("Invite email resent.")}`);
 }
 
 export async function acceptInvite(formData: FormData) {

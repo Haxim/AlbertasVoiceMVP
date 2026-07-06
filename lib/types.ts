@@ -28,6 +28,10 @@ export type Invite = {
   declined_at: string | null;
 };
 
+export type DashboardInvite = Invite & {
+  last_email_invite_sent_at: string | null;
+};
+
 export type Subscriber = {
   id: string;
   invite_id: string | null;
