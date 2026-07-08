@@ -31,8 +31,8 @@ export default function HelpMessagesPage() {
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
       <section className="border-b border-line pb-8">
-        <Link href="/help" className="text-sm font-semibold text-spruce underline decoration-spruce/30 underline-offset-4">
-          Captain help
+        <Link href="/help" className="text-sm font-bold uppercase tracking-wide text-petal hover:text-petal/80">
+          Back to Captain help
         </Link>
         <h1 className="mt-3 text-3xl font-bold text-ink md:text-4xl">Key messages</h1>
         <p className="mt-4 max-w-3xl text-lg leading-8 text-ink/75">
