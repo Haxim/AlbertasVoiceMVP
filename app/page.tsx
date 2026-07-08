@@ -47,31 +47,30 @@ export default async function HomePage({
 
           <div className="grid items-stretch gap-5 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:gap-7">
             <div className="rounded-lg border border-line bg-white p-5 shadow-sm shadow-sky/10">
-              <div className="flex items-center gap-4 border-b border-line pb-5">
-                <img src="/icon.png" alt="Alberta's Voice icon" className="h-20 w-20 rounded-xl" />
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-wide text-spruce">Alberta&apos;s Voice</p>
-                  <h2 className="text-xl font-semibold">What captains do</h2>
-                </div>
+              <div className="border-b border-line pb-5">
+                <p className="text-sm font-semibold uppercase tracking-wide text-spruce">Spread the word</p>
+                <h2 className="mt-1 text-xl font-semibold">Become a Captain</h2>
+                <p className="mt-3 text-sm leading-6 text-ink/70">
+                  Sign up as a captain and help reach people in your circle with a clear message: stay in Canada and vote
+                  No to the Nine.
+                </p>
               </div>
-              <div className="mt-5 space-y-4">
-                {[
-                  ["Start with your circle", "Invite friends, neighbours, coworkers, and family who care about Alberta's future."],
-                  ["Grow the community", "Help new supporters hear from Alberta's Voice and take the next useful step."],
-                  ["Keep it local", "Build momentum through trusted conversations in the places Albertans already gather."]
-                ].map(([title, body]) => (
-                  <div key={title} className="border-l-4 border-gold pl-4">
-                    <h3 className="font-semibold">{title}</h3>
-                    <p className="mt-1 text-sm leading-6 text-ink/70">{body}</p>
-                  </div>
-                ))}
+              <div className="mt-5 grid gap-4 text-sm leading-6 text-ink/70">
+                <p>
+                  Captains invite friends, neighbours, coworkers, and family into the campaign through trusted
+                  conversations.
+                </p>
+                <p>
+                  We&apos;ll give you a simple dashboard for sending invites, tracking responses, and sharing useful campaign
+                  updates.
+                </p>
+                <Link
+                  href="/signup"
+                  className="focus-ring mt-2 block rounded-md bg-spruce px-5 py-3 text-center font-semibold text-white"
+                >
+                  Join as a captain
+                </Link>
               </div>
-              <Link
-                href="/signup"
-                className="focus-ring mt-6 block rounded-md bg-spruce px-5 py-3 text-center font-semibold text-white"
-              >
-                Join as a captain
-              </Link>
             </div>
 
             <div className="flex items-center justify-center">
