@@ -19,13 +19,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="bg-field text-ink antialiased">
         <header className="border-b border-line bg-white/90 shadow-sm shadow-sky/10">
           <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-            <Link href="/" className="flex items-center gap-3 text-lg font-extrabold tracking-normal text-spruce">
+            <a href="https://albertasvoice.ca" className="flex items-center gap-3 text-lg font-extrabold tracking-normal text-spruce">
               <img src="/icon.png" alt="" className="h-10 w-10 rounded-lg" />
               <span>Alberta&apos;s Voice</span>
-            </Link>
+            </a>
             <div className="flex items-center gap-3 text-sm font-medium">
-              <Link href="/resources" className="hover:text-spruce">
-                Captain Resources
+              <Link href="/help" className="hover:text-spruce">
+                Captain help
               </Link>
               {profile?.role === "ADMIN" ? (
                 <Link href="/admin" className="hover:text-spruce">

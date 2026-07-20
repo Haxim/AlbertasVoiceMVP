@@ -173,6 +173,25 @@ export async function resumeEmailBroadcast(broadcastId: string) {
   return processEmailBroadcastBatch(broadcastId);
 }
 
+export async function processIncompleteEmailBroadcastBatches(limit = 3) {
+  const service = createServiceClient();
+  const batchLimit = Math.min(Math.max(limit, 1), 10);
+  const { data: broadcasts, error } = await service
+    .from("broadcasts")
+    .select("id")
+    .eq("channel", "EMAIL")
+    .in("status", ["DRAFT", "FAILED"])
+    .order("created_at", { ascending: true })
+    .limit(batchLimit);
+  if (error) throw error;
+
+  const results = [];
+  for (const broadcast of broadcasts || []) {
+    results.push(await processEmailBroadcastBatch(broadcast.id));
+  }
+  return results;
+}
+
 export async function getIncompleteEmailBroadcasts() {
   const service = createServiceClient();
   const { data: broadcasts, error } = await service

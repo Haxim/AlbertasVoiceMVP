@@ -102,6 +102,12 @@ Invite emails and the `/admin` broadcast page use Resend. Broadcasts are sent to
 
 Each broadcast is recorded in `broadcasts`, and per-subscriber results are recorded in `broadcast_deliveries`.
 
+Broadcasts process in batches of up to 100 recipients. `wrangler.jsonc` configures a Cloudflare Cron Trigger
+(`* * * * *`) and `custom-worker.ts` handles the native scheduled event by advancing incomplete broadcasts in the
+background. Set the optional plaintext variable `ADMIN_BROADCAST_CRON_LIMIT` to control how many broadcasts are advanced
+per scheduled event; it defaults to 3. The admin page continues to show progress from the `broadcasts` and
+`broadcast_deliveries` tables.
+
 ## Turnstile Setup
 
 Create a Cloudflare Turnstile widget and add both keys:

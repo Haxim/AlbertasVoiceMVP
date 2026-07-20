@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createInvite, resendInviteEmail } from "@/lib/actions/invites";
 import { sendCaptainEmailMessage } from "@/lib/actions/captain-messages";
 import { logout } from "@/lib/actions/auth";
@@ -57,6 +58,13 @@ export default async function DashboardPage({
             <input name="nameUseConsent" type="checkbox" value="yes" required className="mt-1 h-4 w-4 rounded border-line" />
             <span>I allow Alberta&apos;s Voice to use my name on communications with this recipient</span>
           </label>
+          <Link
+            href="/help/guide#use-my-name"
+            className="focus-ring inline-flex items-center gap-1.5 text-sm font-semibold text-spruce underline decoration-dashed underline-offset-4"
+          >
+            <span className="flex h-5 w-5 items-center justify-center rounded-full border border-spruce text-xs">?</span>
+            What&apos;s this?
+          </Link>
           <p className="text-sm leading-6 text-ink/70">
             This sends only an invitation. The recipient is not subscribed until they choose an option and check the
             consent box.

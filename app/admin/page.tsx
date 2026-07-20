@@ -106,6 +106,7 @@ export default async function AdminPage({
           <h2 className="text-xl font-semibold">Resume email broadcasts</h2>
           <p className="mt-2 text-sm leading-6 text-ink/70">
             Broadcasts are sent in batches of up to 100 to stay within Worker limits. Already recorded deliveries are skipped.
+            Cloudflare scheduled events can also advance these batches in the background while this page shows progress.
           </p>
           <div className="mt-4 space-y-4">
             {incompleteBroadcasts.map((broadcast) => (
