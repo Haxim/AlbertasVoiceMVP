@@ -86,7 +86,6 @@ pnpm wrangler secret put RESEND_API_KEY
 pnpm wrangler secret put TWILIO_AUTH_TOKEN
 pnpm wrangler secret put NEXT_PUBLIC_TURNSTILE_SITE_KEY
 pnpm wrangler secret put TURNSTILE_SECRET_KEY
-pnpm wrangler secret put ADMIN_BROADCAST_CRON_SECRET
 ```
 
 - Never expose `SUPABASE_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY` to the browser.
@@ -103,16 +102,11 @@ Invite emails and the `/admin` broadcast page use Resend. Broadcasts are sent to
 
 Each broadcast is recorded in `broadcasts`, and per-subscriber results are recorded in `broadcast_deliveries`.
 
-Broadcasts process in batches of up to 100 recipients. To automate remaining batches without keeping an admin browser
-open, call the private cron endpoint once per minute:
-
-```bash
-curl -X POST "https://join.albertasvoice.ca/api/admin/broadcasts/process?limit=3" \
-  -H "Authorization: Bearer $ADMIN_BROADCAST_CRON_SECRET"
-```
-
-The endpoint also accepts `x-cron-secret` or `?secret=` for schedulers that cannot set an authorization header. The admin
-page continues to show progress from the `broadcasts` and `broadcast_deliveries` tables.
+Broadcasts process in batches of up to 100 recipients. `wrangler.jsonc` configures a Cloudflare Cron Trigger
+(`* * * * *`) and `custom-worker.ts` handles the native scheduled event by advancing incomplete broadcasts in the
+background. Set the optional plaintext variable `ADMIN_BROADCAST_CRON_LIMIT` to control how many broadcasts are advanced
+per scheduled event; it defaults to 3. The admin page continues to show progress from the `broadcasts` and
+`broadcast_deliveries` tables.
 
 ## Turnstile Setup
 
