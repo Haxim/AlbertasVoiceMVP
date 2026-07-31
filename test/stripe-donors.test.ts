@@ -51,8 +51,8 @@ describe("Stripe donor aggregation", () => {
       },
       {
         id: "ch_same_email_different_shipping_address",
-        amount: 30000,
-        amount_captured: 30000,
+        amount: 25000,
+        amount_captured: 25000,
         currency: "cad",
         created: 1785429288,
         paid: true,
@@ -64,10 +64,7 @@ describe("Stripe donor aggregation", () => {
           name: "Shipping Donor",
           address: {
             line1: "999 Other Ave",
-            city: "Calgary",
-            state: "AB",
-            postal_code: "T2P 1A1",
-            country: "CA"
+            postal_code: "T2P 1A1"
           }
         }
       },
@@ -106,12 +103,12 @@ describe("Stripe donor aggregation", () => {
         last_donation_at: new Date(1785426288 * 1000).toISOString()
       },
       {
-        donor_key: "shipping donor|999 other ave||calgary|ab|t2p 1a1|ca",
+        donor_key: "shipping donor|999 other ave||||t2p 1a1|",
         stripe_customer_id: "cus_two",
         name: "Shipping Donor",
         email: "donor@example.test",
         currency: "cad",
-        amount_cents: 30000,
+        amount_cents: 25000,
         charge_count: 1,
         last_donation_at: new Date(1785429288 * 1000).toISOString()
       }

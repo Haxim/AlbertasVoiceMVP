@@ -30,7 +30,7 @@ export default async function ThankPage({
           <div>
             <h2 className="text-xl font-semibold">Stripe donor sync</h2>
             <p className="mt-1 text-sm text-ink/65">
-              Pulls successful Stripe charges using billing details and caches lifetime donors over $250.
+              Pulls successful Stripe charges and groups donors by shipping name and shipping address for $250+ lifetime totals.
             </p>
           </div>
           <form action={syncStripeDonors}>

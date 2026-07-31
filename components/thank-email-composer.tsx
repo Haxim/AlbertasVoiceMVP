@@ -225,7 +225,7 @@ function DonorTable({ donors, onGenerate }: { donors: StripeDonorRow[]; onGenera
   return (
     <section className="overflow-hidden rounded-lg border border-line bg-white">
       <div className="border-b border-line p-5">
-        <h2 className="text-xl font-semibold">Stripe donors over $250 lifetime</h2>
+        <h2 className="text-xl font-semibold">Stripe donors at $250+ lifetime</h2>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] text-left text-sm">
@@ -261,7 +261,7 @@ function DonorTable({ donors, onGenerate }: { donors: StripeDonorRow[]; onGenera
             {sortedDonors.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-8 text-center text-ink/60">
-                  No synced Stripe donors over $250 yet.
+                  No synced Stripe donors at $250+ yet.
                 </td>
               </tr>
             ) : null}
