@@ -3,7 +3,7 @@ import { aggregateStripeDonorsForThankYou } from "@/lib/server/thank";
 
 describe("Stripe donor aggregation", () => {
   it("uses shipping name and address for lifetime donor totals", () => {
-    const donors = aggregateStripeDonorsForThankYou([
+    const result = aggregateStripeDonorsForThankYou([
       {
         id: "ch_one",
         amount: 10000,
@@ -93,7 +93,8 @@ describe("Stripe donor aggregation", () => {
       }
     ]);
 
-    expect(donors).toEqual([
+    expect(result.skippedMissingIdentity).toBe(1);
+    expect(result.donors).toEqual([
       {
         donor_key: "shipping donor|123 main st||calgary|ab|t2p 1a1|ca",
         stripe_customer_id: "cus_one",
