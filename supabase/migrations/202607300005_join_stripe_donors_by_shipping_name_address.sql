@@ -10,9 +10,11 @@ drop constraint if exists stripe_donors_name_email_currency_key;
 alter table public.stripe_donors
 add column if not exists donor_key text;
 
-update public.stripe_donors
-set donor_key = lower(regexp_replace(coalesce(name, '') || '|' || coalesce(email, ''), '\s+', ' ', 'g'))
-where donor_key is null;
+update public.thank_you_emails
+set donor_id = null
+where donor_id is not null;
+
+delete from public.stripe_donors;
 
 alter table public.stripe_donors
 alter column donor_key set not null;

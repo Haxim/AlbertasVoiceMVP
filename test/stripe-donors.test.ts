@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { aggregateStripeDonorsForThankYou } from "@/lib/server/thank";
 
 describe("Stripe donor aggregation", () => {
-  it("uses shipping name, email, and currency for lifetime donor totals", () => {
+  it("uses shipping name and address for lifetime donor totals", () => {
     const donors = aggregateStripeDonorsForThankYou([
       {
         id: "ch_one",
@@ -15,7 +15,17 @@ describe("Stripe donor aggregation", () => {
         status: "succeeded",
         customer: "cus_one",
         billing_details: { email: "Donor@Example.test", name: "Billing Name" },
-        shipping: { name: "Shipping Donor" }
+        shipping: {
+          name: "Shipping Donor",
+          address: {
+            line1: "123 Main St",
+            line2: "",
+            city: "Calgary",
+            state: "AB",
+            postal_code: "T2P 1A1",
+            country: "CA"
+          }
+        }
       },
       {
         id: "ch_two",
@@ -27,11 +37,20 @@ describe("Stripe donor aggregation", () => {
         refunded: false,
         status: "succeeded",
         customer: "cus_one",
-        billing_details: { email: "donor@example.test", name: "Billing Name" },
-        shipping: { name: "Shipping Donor" }
+        billing_details: { email: "new-email@example.test", name: "Billing Name" },
+        shipping: {
+          name: "Shipping Donor",
+          address: {
+            line1: "123 Main St",
+            city: "Calgary",
+            state: "AB",
+            postal_code: "T2P 1A1",
+            country: "CA"
+          }
+        }
       },
       {
-        id: "ch_same_email_different_shipping_name",
+        id: "ch_same_email_different_shipping_address",
         amount: 30000,
         amount_captured: 30000,
         currency: "cad",
@@ -41,7 +60,16 @@ describe("Stripe donor aggregation", () => {
         status: "succeeded",
         customer: "cus_two",
         billing_details: { email: "donor@example.test", name: "Billing Name" },
-        shipping: { name: "Different Shipping Donor" }
+        shipping: {
+          name: "Shipping Donor",
+          address: {
+            line1: "999 Other Ave",
+            city: "Calgary",
+            state: "AB",
+            postal_code: "T2P 1A1",
+            country: "CA"
+          }
+        }
       },
       {
         id: "ch_refunded",
@@ -67,17 +95,19 @@ describe("Stripe donor aggregation", () => {
 
     expect(donors).toEqual([
       {
+        donor_key: "shipping donor|123 main st||calgary|ab|t2p 1a1|ca",
         stripe_customer_id: "cus_one",
         name: "Shipping Donor",
-        email: "donor@example.test",
+        email: "new-email@example.test",
         currency: "cad",
         amount_cents: 27501,
         charge_count: 2,
         last_donation_at: new Date(1785426288 * 1000).toISOString()
       },
       {
+        donor_key: "shipping donor|999 other ave||calgary|ab|t2p 1a1|ca",
         stripe_customer_id: "cus_two",
-        name: "Different Shipping Donor",
+        name: "Shipping Donor",
         email: "donor@example.test",
         currency: "cad",
         amount_cents: 30000,

@@ -14,6 +14,7 @@ export type ThankYouEmailLogRow = {
 
 export type StripeDonorRow = {
   id: string;
+  donor_key: string;
   stripe_customer_id: string | null;
   name: string | null;
   email: string;
@@ -80,7 +81,7 @@ export async function getStripeDonorsOverThreshold(limit = 200) {
   const rowLimit = Math.min(Math.max(limit, 1), 500);
   const { data, error } = await service
     .from("stripe_donors")
-    .select("id,stripe_customer_id,name,email,currency,amount_cents,charge_count,last_donation_at,thank_you_sent_at,synced_at")
+    .select("id,donor_key,stripe_customer_id,name,email,currency,amount_cents,charge_count,last_donation_at,thank_you_sent_at,synced_at")
     .gte("amount_cents", 25001)
     .order("thank_you_sent_at", { ascending: true, nullsFirst: true })
     .order("amount_cents", { ascending: false })
@@ -96,16 +97,37 @@ export async function syncStripeDonorsOverThreshold() {
 
   const service = createServiceClient();
   const now = new Date().toISOString();
+  const existingEmails = await getExistingDonorEmails(donors);
   const { error } = await service.from("stripe_donors").upsert(
     donors.map((donor) => ({
       ...donor,
+      email: existingEmails.get(`${donor.donor_key}:${donor.currency}`) || donor.email,
       synced_at: now,
       updated_at: now
     })),
-    { onConflict: "name,email,currency" }
+    { onConflict: "donor_key,currency" }
   );
   if (error) throw error;
   return { synced: donors.length, scanned: charges.length };
+}
+
+async function getExistingDonorEmails(donors: Array<{ donor_key: string; currency: string }>) {
+  const existingEmails = new Map<string, string>();
+  if (!donors.length) return existingEmails;
+
+  const service = createServiceClient();
+  const { data, error } = await service
+    .from("stripe_donors")
+    .select("donor_key,currency,email")
+    .in("donor_key", Array.from(new Set(donors.map((donor) => donor.donor_key))));
+  if (error) throw error;
+
+  for (const row of data || []) {
+    if (row.donor_key && row.currency && row.email) {
+      existingEmails.set(`${row.donor_key}:${row.currency}`, row.email);
+    }
+  }
+  return existingEmails;
 }
 
 type StripeCharge = {
@@ -124,6 +146,14 @@ type StripeCharge = {
   } | null;
   shipping?: {
     name?: string | null;
+    address?: {
+      line1?: string | null;
+      line2?: string | null;
+      city?: string | null;
+      state?: string | null;
+      postal_code?: string | null;
+      country?: string | null;
+    } | null;
   } | null;
   receipt_email?: string | null;
 };
@@ -156,6 +186,7 @@ async function fetchStripeCharges() {
 
 export function aggregateStripeDonorsForThankYou(charges: StripeCharge[]) {
   const donors = new Map<string, {
+    donor_key: string;
     stripe_customer_id: string | null;
     name: string | null;
     email: string;
@@ -163,15 +194,17 @@ export function aggregateStripeDonorsForThankYou(charges: StripeCharge[]) {
     amount_cents: number;
     charge_count: number;
     last_donation_at: string | null;
+    best_email_amount_cents: number;
   }>();
 
   for (const charge of charges) {
     if (!isSuccessfulDonationCharge(charge)) continue;
     const email = (charge.billing_details?.email || charge.receipt_email || "").trim().toLowerCase();
     const donorName = charge.shipping?.name?.trim();
-    if (!email || !donorName) continue;
+    const donorKey = donorKeyForCharge(charge);
+    if (!email || !donorName || !donorKey) continue;
     const currency = charge.currency.toLowerCase();
-    const key = `${donorName.toLowerCase()}:${email}:${currency}`;
+    const key = `${donorKey}:${currency}`;
     const amount = charge.amount_captured || charge.amount;
     const donatedAt = new Date(charge.created * 1000).toISOString();
     const current = donors.get(key);
@@ -179,24 +212,52 @@ export function aggregateStripeDonorsForThankYou(charges: StripeCharge[]) {
       current.amount_cents += amount;
       current.charge_count += 1;
       if (!current.name) current.name = donorName;
-      if (!current.stripe_customer_id && charge.customer) current.stripe_customer_id = charge.customer;
+      if (amount > current.best_email_amount_cents) {
+        current.email = email;
+        current.stripe_customer_id = charge.customer || null;
+        current.best_email_amount_cents = amount;
+      } else if (!current.stripe_customer_id && charge.customer) {
+        current.stripe_customer_id = charge.customer;
+      }
       if (!current.last_donation_at || current.last_donation_at < donatedAt) current.last_donation_at = donatedAt;
       continue;
     }
     donors.set(key, {
+      donor_key: donorKey,
       stripe_customer_id: charge.customer || null,
       name: donorName,
       email,
       currency,
       amount_cents: amount,
       charge_count: 1,
-      last_donation_at: donatedAt
+      last_donation_at: donatedAt,
+      best_email_amount_cents: amount
     });
   }
 
-  return Array.from(donors.values());
+  return Array.from(donors.values()).map(({ best_email_amount_cents, ...donor }) => donor);
 }
 
 function isSuccessfulDonationCharge(charge: StripeCharge) {
   return charge.status === "succeeded" && charge.paid !== false && !charge.refunded && charge.amount > 0;
+}
+
+function donorKeyForCharge(charge: StripeCharge) {
+  const shipping = charge.shipping;
+  const address = shipping?.address;
+  const parts = [
+    shipping?.name,
+    address?.line1,
+    address?.line2,
+    address?.city,
+    address?.state,
+    address?.postal_code,
+    address?.country
+  ].map(normalizeIdentityPart);
+  if (parts.some((part, index) => index !== 2 && !part)) return null;
+  return parts.join("|");
+}
+
+function normalizeIdentityPart(value?: string | null) {
+  return (value || "").trim().toLowerCase().replace(/\s+/g, " ");
 }
