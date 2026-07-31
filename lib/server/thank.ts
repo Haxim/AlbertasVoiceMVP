@@ -82,7 +82,7 @@ export async function getStripeDonorsOverThreshold(limit = 200) {
   const { data, error } = await service
     .from("stripe_donors")
     .select("id,donor_key,stripe_customer_id,name,email,currency,amount_cents,charge_count,last_donation_at,thank_you_sent_at,synced_at")
-    .gte("amount_cents", 25001)
+    .gte("amount_cents", 25000)
     .order("thank_you_sent_at", { ascending: true, nullsFirst: true })
     .order("amount_cents", { ascending: false })
     .limit(rowLimit);
@@ -93,7 +93,7 @@ export async function getStripeDonorsOverThreshold(limit = 200) {
 export async function syncStripeDonorsOverThreshold() {
   const charges = await fetchStripeCharges();
   const result = aggregateStripeDonorsForThankYou(charges);
-  const donors = result.donors.filter((donor) => donor.amount_cents > 25000);
+  const donors = result.donors.filter((donor) => donor.amount_cents >= 25000);
   if (!donors.length) {
     return {
       synced: 0,
@@ -267,8 +267,8 @@ function isSuccessfulDonationCharge(charge: StripeCharge) {
 function donorKeyForCharge(charge: StripeCharge) {
   const shipping = charge.shipping;
   const address = shipping?.address;
-  const parts = [
-    shipping?.name,
+  const name = normalizeIdentityPart(shipping?.name);
+  const addressParts = [
     address?.line1,
     address?.line2,
     address?.city,
@@ -276,8 +276,8 @@ function donorKeyForCharge(charge: StripeCharge) {
     address?.postal_code,
     address?.country
   ].map(normalizeIdentityPart);
-  if (parts.some((part, index) => index !== 2 && !part)) return null;
-  return parts.join("|");
+  if (!name || !addressParts.some(Boolean)) return null;
+  return [name, ...addressParts].join("|");
 }
 
 function normalizeIdentityPart(value?: string | null) {
