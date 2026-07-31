@@ -1,5 +1,6 @@
 create table if not exists public.stripe_donors (
   id uuid primary key default gen_random_uuid(),
+  donor_key text,
   stripe_customer_id text,
   name text,
   email text not null,
@@ -11,8 +12,11 @@ create table if not exists public.stripe_donors (
   synced_at timestamptz not null default now(),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (name, email, currency)
+  unique (donor_key, currency)
 );
+
+alter table public.stripe_donors
+add column if not exists donor_key text;
 
 alter table public.stripe_donors
 add column if not exists stripe_customer_id text;
@@ -48,11 +52,22 @@ alter table public.stripe_donors
 add column if not exists updated_at timestamptz not null default now();
 
 drop index if exists public.stripe_donors_email_currency_unique;
+drop index if exists public.stripe_donors_name_email_currency_unique;
 
 alter table public.stripe_donors
 drop constraint if exists stripe_donors_email_currency_key;
 
-create unique index if not exists stripe_donors_name_email_currency_unique on public.stripe_donors(name, email, currency);
+alter table public.stripe_donors
+drop constraint if exists stripe_donors_name_email_currency_key;
+
+update public.stripe_donors
+set donor_key = lower(regexp_replace(coalesce(name, '') || '|' || coalesce(email, ''), '\s+', ' ', 'g'))
+where donor_key is null;
+
+alter table public.stripe_donors
+alter column donor_key set not null;
+
+create unique index if not exists stripe_donors_donor_key_currency_unique on public.stripe_donors(donor_key, currency);
 create index if not exists stripe_donors_amount_idx on public.stripe_donors(amount_cents desc);
 create index if not exists stripe_donors_thank_you_sent_at_idx on public.stripe_donors(thank_you_sent_at desc);
 
