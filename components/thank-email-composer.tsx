@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type React from "react";
 import { Turnstile } from "@/components/turnstile";
+import type { StripeDonorRow } from "@/lib/server/thank";
 
 const DEFAULT_SUBJECT = "Thank you from Alberta's Voice";
 
@@ -51,13 +52,18 @@ Alberta's Voice`;
 
 export function ThankEmailComposer({
   action,
-  turnstileSiteKey
+  turnstileSiteKey,
+  donors
 }: {
   action: (formData: FormData) => void | Promise<void>;
   turnstileSiteKey?: string | null;
+  donors: StripeDonorRow[];
 }) {
+  const [recipientEmail, setRecipientEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [amount, setAmount] = useState("");
+  const [donorId, setDonorId] = useState("");
+  const [subject, setSubject] = useState(DEFAULT_SUBJECT);
   const [body, setBody] = useState(() => thankYouTemplate("", ""));
   const previewBlocks = useMemo(() => markdownToPreviewBlocks(body), [body]);
 
@@ -65,104 +71,228 @@ export function ThankEmailComposer({
     setBody(thankYouTemplate(firstName, amount));
   }
 
-  return (
-    <form action={action} className="mt-6 space-y-5">
-      <section className="rounded-lg border border-line bg-white p-4">
-        <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end">
-          <label className="block">
-            <span className="text-sm font-medium">Recipient email</span>
-            <input name="to" type="email" required className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2" />
-          </label>
-          <label className="block">
-            <span className="text-sm font-medium">First name</span>
-            <input
-              value={firstName}
-              onChange={(event) => setFirstName(event.target.value)}
-              className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2"
-            />
-          </label>
-          <label className="block">
-            <span className="text-sm font-medium">Amount</span>
-            <input
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              inputMode="decimal"
-              placeholder="500"
-              className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2"
-            />
-          </label>
-          <button
-            type="button"
-            onClick={generateEmail}
-            className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white"
-          >
-            Generate
-          </button>
-        </div>
-        <label className="mt-4 block">
-          <span className="text-sm font-medium">Subject</span>
-          <input
-            name="subject"
-            required
-            defaultValue={DEFAULT_SUBJECT}
-            className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2"
-          />
-        </label>
-      </section>
+  function generateForDonor(donor: StripeDonorRow) {
+    const donorFirstName = firstNameFromDonor(donor);
+    const donorAmount = amountFromDonor(donor);
+    setRecipientEmail(donor.email);
+    setFirstName(donorFirstName);
+    setAmount(donorAmount);
+    setDonorId(donor.id);
+    setSubject(DEFAULT_SUBJECT);
+    setBody(thankYouTemplate(donorFirstName, donorAmount));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
-      <section className="grid gap-5 xl:grid-cols-2">
-        <div className="overflow-hidden rounded-lg border border-line bg-white">
-          <div className="border-b border-line px-4 py-3">
-            <h2 className="text-lg font-semibold">Preview</h2>
+  return (
+    <div className="mt-6 space-y-5">
+      <form action={action} className="space-y-5">
+        <section className="rounded-lg border border-line bg-white p-4">
+          <input name="donorId" type="hidden" value={donorId} />
+          <div className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end">
+            <label className="block">
+              <span className="text-sm font-medium">Recipient email</span>
+              <input
+                name="to"
+                type="email"
+                required
+                value={recipientEmail}
+                onChange={(event) => {
+                  setRecipientEmail(event.target.value);
+                  setDonorId("");
+                }}
+                className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-medium">First name</span>
+              <input
+                value={firstName}
+                onChange={(event) => {
+                  setFirstName(event.target.value);
+                  setDonorId("");
+                }}
+                className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-medium">Amount</span>
+              <input
+                value={amount}
+                onChange={(event) => {
+                  setAmount(event.target.value);
+                  setDonorId("");
+                }}
+                inputMode="decimal"
+                placeholder="500"
+                className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={generateEmail}
+              className="focus-ring rounded-md bg-spruce px-4 py-2 font-semibold text-white"
+            >
+              Generate
+            </button>
           </div>
-          <div className="bg-[#f5f7fa] p-4">
-            <div className="mx-auto max-w-[600px] overflow-hidden rounded-xl bg-white">
-              <div className="bg-[#003754] px-8 py-9 text-center text-white">
-                <img src="/icon.png" alt="" className="mx-auto mb-4 h-24 w-24" />
-                <p className="text-3xl font-bold leading-tight">Alberta&apos;s Voice</p>
-                <p className="mt-3 text-base text-blue-100">A Voice for Every Albertan</p>
-              </div>
-              <div className="px-6 py-8 text-base leading-7 text-[#374151] sm:px-10">
-                {previewBlocks}
-                <p className="mb-4 text-sm leading-6 text-[#6b7280]">
-                  You are receiving this thank-you because you donated to Alberta&apos;s Voice.
-                </p>
-                <p className="text-sm leading-6 text-[#6b7280]">
-                  Authorized by Alberta&apos;s Voice, Referendum Third Party Advertiser. Contact:{" "}
-                  <span className="underline">info@albertasvoice.ca</span>.
-                </p>
-              </div>
-              <div className="px-10 pb-10">
-                <hr className="my-6 border-[#e5e7eb]" />
-                <p className="text-center text-xl font-bold text-[#003754]">No to the Nine. Stay in Canada.</p>
+          <label className="mt-4 block">
+            <span className="text-sm font-medium">Subject</span>
+            <input
+              name="subject"
+              required
+              value={subject}
+              onChange={(event) => setSubject(event.target.value)}
+              className="focus-ring mt-1 w-full rounded-md border border-line px-3 py-2"
+            />
+          </label>
+        </section>
+
+        <section className="grid gap-5 xl:grid-cols-2">
+          <div className="overflow-hidden rounded-lg border border-line bg-white">
+            <div className="border-b border-line px-4 py-3">
+              <h2 className="text-lg font-semibold">Preview</h2>
+            </div>
+            <div className="bg-[#f5f7fa] p-4">
+              <div className="mx-auto max-w-[600px] overflow-hidden rounded-xl bg-white">
+                <div className="bg-[#003754] px-8 py-9 text-center text-white">
+                  <img src="/icon.png" alt="" className="mx-auto mb-4 h-24 w-24" />
+                  <p className="text-3xl font-bold leading-tight">Alberta&apos;s Voice</p>
+                  <p className="mt-3 text-base text-blue-100">A Voice for Every Albertan</p>
+                </div>
+                <div className="px-6 py-8 text-base leading-7 text-[#374151] sm:px-10">
+                  {previewBlocks}
+                  <p className="mb-4 text-sm leading-6 text-[#6b7280]">
+                    You are receiving this thank-you because you donated to Alberta&apos;s Voice.
+                  </p>
+                  <p className="text-sm leading-6 text-[#6b7280]">
+                    Authorized by Alberta&apos;s Voice, Referendum Third Party Advertiser. Contact:{" "}
+                    <span className="underline">info@albertasvoice.ca</span>.
+                  </p>
+                </div>
+                <div className="px-10 pb-10">
+                  <hr className="my-6 border-[#e5e7eb]" />
+                  <p className="text-center text-xl font-bold text-[#003754]">No to the Nine. Stay in Canada.</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="rounded-lg border border-line bg-white p-4">
-          <label className="block">
-            <span className="text-lg font-semibold">Message</span>
-            <textarea
-              name="body"
-              value={body}
-              onChange={(event) => setBody(event.target.value)}
-              rows={28}
-              required
-              className="focus-ring mt-3 min-h-[720px] w-full rounded-md border border-line px-3 py-2 font-mono text-sm leading-6"
-            />
-          </label>
-          <label className="mt-4 flex items-start gap-3 rounded-md bg-field p-4 text-sm leading-6">
-            <input name="confirmConsent" type="checkbox" value="yes" required className="mt-1 h-4 w-4" />
-            <span>I have reviewed this thank-you email and confirmed the recipient should receive it.</span>
-          </label>
-          <div className="mt-4">
-            <Turnstile siteKey={turnstileSiteKey} />
+          <div className="rounded-lg border border-line bg-white p-4">
+            <label className="block">
+              <span className="text-lg font-semibold">Message</span>
+              <textarea
+                name="body"
+                value={body}
+                onChange={(event) => setBody(event.target.value)}
+                rows={28}
+                required
+                className="focus-ring mt-3 min-h-[720px] w-full rounded-md border border-line px-3 py-2 font-mono text-sm leading-6"
+              />
+            </label>
+            <label className="mt-4 flex items-start gap-3 rounded-md bg-field p-4 text-sm leading-6">
+              <input name="confirmConsent" type="checkbox" value="yes" required className="mt-1 h-4 w-4" />
+              <span>I have reviewed this thank-you email and confirmed the recipient should receive it.</span>
+            </label>
+            <div className="mt-4">
+              <Turnstile siteKey={turnstileSiteKey} />
+            </div>
+            <button className="focus-ring mt-4 rounded-md bg-spruce px-4 py-2 font-semibold text-white">Send thank-you</button>
           </div>
-          <button className="focus-ring mt-4 rounded-md bg-spruce px-4 py-2 font-semibold text-white">Send thank-you</button>
-        </div>
-      </section>
-    </form>
+        </section>
+      </form>
+      <DonorTable donors={donors} onGenerate={generateForDonor} />
+    </div>
+  );
+}
+
+type DonorSort = "name" | "amount" | "email" | "sent";
+type SortDirection = "asc" | "desc";
+
+function DonorTable({ donors, onGenerate }: { donors: StripeDonorRow[]; onGenerate: (donor: StripeDonorRow) => void }) {
+  const [sort, setSort] = useState<DonorSort>("sent");
+  const [direction, setDirection] = useState<SortDirection>("asc");
+  const sortedDonors = useMemo(() => sortDonors(donors, sort, direction), [donors, sort, direction]);
+
+  function toggleSort(field: DonorSort) {
+    if (sort === field) {
+      setDirection(direction === "asc" ? "desc" : "asc");
+      return;
+    }
+    setSort(field);
+    setDirection(field === "amount" ? "desc" : "asc");
+  }
+
+  return (
+    <section className="overflow-hidden rounded-lg border border-line bg-white">
+      <div className="border-b border-line p-5">
+        <h2 className="text-xl font-semibold">Stripe donors over $250 lifetime</h2>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px] text-left text-sm">
+          <thead className="bg-field text-xs uppercase text-ink/60">
+            <tr>
+              <DonorHeader label="Name" field="name" sort={sort} direction={direction} onSort={toggleSort} />
+              <DonorHeader label="Amount" field="amount" sort={sort} direction={direction} onSort={toggleSort} />
+              <DonorHeader label="Email" field="email" sort={sort} direction={direction} onSort={toggleSort} />
+              <DonorHeader label="Sent date" field="sent" sort={sort} direction={direction} onSort={toggleSort} />
+            </tr>
+          </thead>
+          <tbody>
+            {sortedDonors.map((donor) => (
+              <tr key={donor.id} className="border-t border-line">
+                <td className="px-4 py-3 font-medium">{donor.name || "Donor"}</td>
+                <td className="px-4 py-3 text-ink/70">{formatMoney(donor.amount_cents, donor.currency)}</td>
+                <td className="px-4 py-3 text-ink/70">{donor.email}</td>
+                <td className="px-4 py-3 text-ink/70">
+                  {donor.thank_you_sent_at ? (
+                    formatSentAt(donor.thank_you_sent_at)
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onGenerate(donor)}
+                      className="focus-ring rounded-md bg-spruce px-3 py-1.5 text-sm font-semibold text-white"
+                    >
+                      Generate
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {sortedDonors.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-4 py-8 text-center text-ink/60">
+                  No synced Stripe donors over $250 yet.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function DonorHeader({
+  label,
+  field,
+  sort,
+  direction,
+  onSort
+}: {
+  label: string;
+  field: DonorSort;
+  sort: DonorSort;
+  direction: SortDirection;
+  onSort: (field: DonorSort) => void;
+}) {
+  const indicator = sort === field ? (direction === "asc" ? " ^" : " v") : "";
+  return (
+    <th className="px-4 py-3">
+      <button type="button" onClick={() => onSort(field)} className="focus-ring rounded-sm font-semibold hover:text-spruce">
+        {label}
+        <span aria-hidden="true">{indicator}</span>
+      </button>
+    </th>
   );
 }
 
@@ -214,6 +344,47 @@ function pluralize(count: number, singular: string) {
 function parseDonationAmount(amount: string) {
   const parsed = Number(amount.replace(/[$,\s]/g, ""));
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function firstNameFromDonor(donor: StripeDonorRow) {
+  const name = donor.name?.trim();
+  if (name) return name.split(/\s+/)[0];
+  return donor.email.split("@")[0];
+}
+
+function amountFromDonor(donor: StripeDonorRow) {
+  return (donor.amount_cents / 100).toFixed(donor.amount_cents % 100 === 0 ? 0 : 2);
+}
+
+function formatMoney(amountCents: number, currency: string) {
+  return (amountCents / 100).toLocaleString("en-CA", {
+    style: "currency",
+    currency: currency.toUpperCase(),
+    maximumFractionDigits: amountCents % 100 === 0 ? 0 : 2
+  });
+}
+
+function formatSentAt(value: string) {
+  return new Intl.DateTimeFormat("en-CA", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "America/Edmonton"
+  }).format(new Date(value));
+}
+
+function sortDonors(donors: StripeDonorRow[], sort: DonorSort, direction: SortDirection) {
+  const multiplier = direction === "asc" ? 1 : -1;
+  return [...donors].sort((a, b) => {
+    if (sort === "amount") return multiplier * (a.amount_cents - b.amount_cents);
+    if (sort === "sent") {
+      const aTime = a.thank_you_sent_at ? new Date(a.thank_you_sent_at).getTime() : 0;
+      const bTime = b.thank_you_sent_at ? new Date(b.thank_you_sent_at).getTime() : 0;
+      return multiplier * (aTime - bTime);
+    }
+    const aValue = sort === "name" ? a.name || "" : a.email;
+    const bValue = sort === "name" ? b.name || "" : b.email;
+    return multiplier * aValue.localeCompare(bValue, "en-CA", { sensitivity: "base" });
+  });
 }
 
 function markdownToPreviewBlocks(markdown: string) {
