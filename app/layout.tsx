@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { getCurrentProfile } from "@/lib/auth";
 import "./globals.css";
 
@@ -30,6 +31,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               {profile?.role === "ADMIN" ? (
                 <Link href="/admin" className="hover:text-spruce">
                   Admin
+                </Link>
+              ) : null}
+              {profile?.role === "ADMIN" || profile?.role === "THANK" ? (
+                <Link href={"/thank" as Route} className="hover:text-spruce">
+                  Thank
                 </Link>
               ) : null}
               <Link href="/dashboard" className="rounded-md bg-spruce px-3 py-2 text-white shadow-sm shadow-sky/20 hover:bg-spruce/90">

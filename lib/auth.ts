@@ -38,3 +38,10 @@ export async function requireAdmin(profile?: Profile | null) {
   if (activeProfile.role !== "ADMIN") redirect("/dashboard");
   return activeProfile;
 }
+
+export async function requireThankAccess(profile?: Profile | null) {
+  const activeProfile = profile ?? (await getCurrentProfile());
+  if (!activeProfile) redirect("/login");
+  if (activeProfile.role !== "ADMIN" && activeProfile.role !== "THANK") redirect("/dashboard");
+  return activeProfile;
+}

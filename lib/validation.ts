@@ -58,3 +58,10 @@ export const captainEmailMessageSchema = z.object({
   body: z.string().trim().min(10).max(5000),
   confirmConsent: z.literal("yes")
 });
+
+export const thankYouEmailSchema = z.object({
+  to: z.string().trim().email(),
+  subject: z.string().trim().min(3).max(160),
+  body: z.string().trim().min(10).max(5000),
+  confirmConsent: z.literal("yes")
+});
