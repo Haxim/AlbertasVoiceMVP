@@ -51,12 +51,14 @@ export async function sendThankYouEmail(formData: FormData) {
 
 export async function syncStripeDonors() {
   await requireThankAccess();
+  let message = "Stripe sync complete.";
   try {
     const result = await syncStripeDonorsOverThreshold();
-    redirect(`/thank?message=${encodeURIComponent(`Stripe sync complete: ${result.synced} donors over $250 from ${result.scanned} charges.`)}` as Route);
+    message = `Stripe sync complete: ${result.synced} donors over $250 from ${result.scanned} charges.`;
   } catch (error) {
     redirect(`/thank?error=${encodeURIComponent(errorMessage(error, "Stripe sync failed."))}` as Route);
   }
+  redirect(`/thank?message=${encodeURIComponent(message)}` as Route);
 }
 
 function errorMessage(error: unknown, fallback: string) {
