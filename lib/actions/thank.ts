@@ -6,7 +6,7 @@ import type { Route } from "next";
 import { requireThankAccess } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import { emailThankYouHtml, emailThankYouText } from "@/lib/messaging";
-import { logThankYouEmailSent } from "@/lib/server/thank";
+import { logThankYouEmailSent, syncStripeDonorsOverThreshold } from "@/lib/server/thank";
 import { getRequestIp, verifyTurnstileToken } from "@/lib/turnstile";
 import { thankYouEmailSchema } from "@/lib/validation";
 
@@ -17,6 +17,7 @@ export async function sendThankYouEmail(formData: FormData) {
     to: formData.get("to"),
     subject: formData.get("subject"),
     body: formData.get("body"),
+    donorId: formData.get("donorId"),
     confirmConsent: formData.get("confirmConsent")
   });
   if (!parsed.success) {
@@ -38,13 +39,24 @@ export async function sendThankYouEmail(formData: FormData) {
       sender,
       recipientEmail: parsed.data.to,
       subject: parsed.data.subject,
-      providerMessageId
+      providerMessageId,
+      donorId: parsed.data.donorId || null
     });
   } catch (error) {
     redirect(`/thank?error=${encodeURIComponent(errorMessage(error, "Thank-you email failed."))}` as Route);
   }
 
   redirect(`/thank?message=${encodeURIComponent(`Thank-you email sent to ${parsed.data.to}.`)}` as Route);
+}
+
+export async function syncStripeDonors() {
+  await requireThankAccess();
+  try {
+    const result = await syncStripeDonorsOverThreshold();
+    redirect(`/thank?message=${encodeURIComponent(`Stripe sync complete: ${result.synced} donors over $250 from ${result.scanned} charges.`)}` as Route);
+  } catch (error) {
+    redirect(`/thank?error=${encodeURIComponent(errorMessage(error, "Stripe sync failed."))}` as Route);
+  }
 }
 
 function errorMessage(error: unknown, fallback: string) {
