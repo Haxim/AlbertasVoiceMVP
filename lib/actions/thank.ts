@@ -54,7 +54,7 @@ export async function syncStripeDonors() {
   let message = "Stripe sync complete.";
   try {
     const result = await syncStripeDonorsOverThreshold();
-    message = `Stripe sync complete: ${result.synced} donors over $250 from ${result.scanned} charges.`;
+    message = `Stripe sync complete: ${result.synced} donors over $250 from ${result.scanned} charges. ${result.grouped} grouped donors, ${result.belowThreshold} below $250, ${result.skippedMissingIdentity} skipped for missing email or shipping identity.`;
   } catch (error) {
     redirect(`/thank?error=${encodeURIComponent(errorMessage(error, "Stripe sync failed."))}` as Route);
   }

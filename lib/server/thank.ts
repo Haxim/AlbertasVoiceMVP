@@ -92,8 +92,17 @@ export async function getStripeDonorsOverThreshold(limit = 200) {
 
 export async function syncStripeDonorsOverThreshold() {
   const charges = await fetchStripeCharges();
-  const donors = aggregateStripeDonorsForThankYou(charges).filter((donor) => donor.amount_cents > 25000);
-  if (!donors.length) return { synced: 0, scanned: charges.length };
+  const result = aggregateStripeDonorsForThankYou(charges);
+  const donors = result.donors.filter((donor) => donor.amount_cents > 25000);
+  if (!donors.length) {
+    return {
+      synced: 0,
+      scanned: charges.length,
+      grouped: result.donors.length,
+      belowThreshold: result.donors.length,
+      skippedMissingIdentity: result.skippedMissingIdentity
+    };
+  }
 
   const service = createServiceClient();
   const now = new Date().toISOString();
@@ -108,7 +117,13 @@ export async function syncStripeDonorsOverThreshold() {
     { onConflict: "donor_key,currency" }
   );
   if (error) throw error;
-  return { synced: donors.length, scanned: charges.length };
+  return {
+    synced: donors.length,
+    scanned: charges.length,
+    grouped: result.donors.length,
+    belowThreshold: result.donors.length - donors.length,
+    skippedMissingIdentity: result.skippedMissingIdentity
+  };
 }
 
 async function getExistingDonorEmails(donors: Array<{ donor_key: string; currency: string }>) {
@@ -196,13 +211,17 @@ export function aggregateStripeDonorsForThankYou(charges: StripeCharge[]) {
     last_donation_at: string | null;
     best_email_amount_cents: number;
   }>();
+  let skippedMissingIdentity = 0;
 
   for (const charge of charges) {
     if (!isSuccessfulDonationCharge(charge)) continue;
     const email = (charge.billing_details?.email || charge.receipt_email || "").trim().toLowerCase();
     const donorName = charge.shipping?.name?.trim();
     const donorKey = donorKeyForCharge(charge);
-    if (!email || !donorName || !donorKey) continue;
+    if (!email || !donorName || !donorKey) {
+      skippedMissingIdentity += 1;
+      continue;
+    }
     const currency = charge.currency.toLowerCase();
     const key = `${donorKey}:${currency}`;
     const amount = charge.amount_captured || charge.amount;
@@ -235,7 +254,10 @@ export function aggregateStripeDonorsForThankYou(charges: StripeCharge[]) {
     });
   }
 
-  return Array.from(donors.values()).map(({ best_email_amount_cents, ...donor }) => donor);
+  return {
+    donors: Array.from(donors.values()).map(({ best_email_amount_cents, ...donor }) => donor),
+    skippedMissingIdentity
+  };
 }
 
 function isSuccessfulDonationCharge(charge: StripeCharge) {
