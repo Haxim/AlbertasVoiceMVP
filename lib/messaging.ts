@@ -146,8 +146,6 @@ TPA/compliance statement: https://albertasvoice.ca/disclaimer
 export function emailThankYouHtml(body: string) {
   return renderAlbertaVoiceEmail({
     body,
-    ctaUrl: "https://join.albertasvoice.ca",
-    ctaLabel: "Become a Captain",
     notice: "You are receiving this thank-you because you donated to Alberta's Voice."
   });
 }
@@ -159,11 +157,25 @@ function renderAlbertaVoiceEmail({
   notice
 }: {
   body: string;
-  ctaUrl: string;
-  ctaLabel: string;
+  ctaUrl?: string;
+  ctaLabel?: string;
   notice: string;
 }) {
   const messageHtml = markdownToEmailHtml(body);
+  const ctaHtml =
+    ctaUrl && ctaLabel
+      ? `
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:40px auto;">
+                <tr>
+                  <td align="center" bgcolor="#c8102e" style="border-radius:8px;">
+                    <a href="${escapeHtml(ctaUrl)}" style="display:inline-block;padding:16px 32px;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;">
+                      ${escapeHtml(ctaLabel)}
+                    </a>
+                  </td>
+                </tr>
+              </table>
+`
+      : "";
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -193,16 +205,7 @@ function renderAlbertaVoiceEmail({
               <div style="font-size:16px;line-height:1.7;color:#374151;">
                 ${messageHtml}
               </div>
-
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:40px auto;">
-                <tr>
-                  <td align="center" bgcolor="#c8102e" style="border-radius:8px;">
-                    <a href="${escapeHtml(ctaUrl)}" style="display:inline-block;padding:16px 32px;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;">
-                      ${escapeHtml(ctaLabel)}
-                    </a>
-                  </td>
-                </tr>
-              </table>
+${ctaHtml}
 
               <p style="margin:0 0 16px 0;font-size:14px;line-height:1.6;color:#6b7280;">
                 ${escapeHtml(notice)}

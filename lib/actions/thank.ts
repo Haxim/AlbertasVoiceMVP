@@ -6,6 +6,7 @@ import type { Route } from "next";
 import { requireThankAccess } from "@/lib/auth";
 import { sendEmail } from "@/lib/email";
 import { emailThankYouHtml, emailThankYouText } from "@/lib/messaging";
+import { logThankYouEmailSent } from "@/lib/server/thank";
 import { getRequestIp, verifyTurnstileToken } from "@/lib/turnstile";
 import { thankYouEmailSchema } from "@/lib/validation";
 
@@ -24,7 +25,7 @@ export async function sendThankYouEmail(formData: FormData) {
 
   try {
     await verifyTurnstileToken(formData.get("cf-turnstile-response"), getRequestIp(h));
-    await sendEmail({
+    const providerMessageId = await sendEmail({
       to: parsed.data.to,
       subject: parsed.data.subject,
       text: emailThankYouText(parsed.data.body),
@@ -32,6 +33,12 @@ export async function sendThankYouEmail(formData: FormData) {
       fromName: "Alberta's Voice",
       fromEmailEnv: "THANK_FROM_EMAIL",
       replyTo: sender.email || undefined
+    });
+    await logThankYouEmailSent({
+      sender,
+      recipientEmail: parsed.data.to,
+      subject: parsed.data.subject,
+      providerMessageId
     });
   } catch (error) {
     redirect(`/thank?error=${encodeURIComponent(errorMessage(error, "Thank-you email failed."))}` as Route);

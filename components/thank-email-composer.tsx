@@ -9,43 +9,44 @@ const DEFAULT_SUBJECT = "Thank you from Alberta's Voice";
 export function thankYouTemplate(firstName: string, amount: string) {
   const name = firstName.trim() || "[First Name]";
   const giftAmount = formatGiftAmount(amount);
+  const impact = donationImpact(amount);
 
-  return `**Hi ${name},**
+  return `Hi ${name},
 
 **Thank you so much.**
 
-**Your gift is already at work and we wanted you to be among the first to see what it's made possible.**
+Your gift is already at work and we wanted you to be among the first to see what it's made possible.
 
-**Because of donations like yours, Alberta's Voice has made the pivot from a grassroots idea into a full, real campaign. We are so grateful.**
+Because of donations like yours, Alberta's Voice has made the pivot from a grassroots idea into a full, real campaign. We are so grateful.
 
-**To make the impact of your donation really clear, your ${giftAmount} donation is enough to add any one of the following key elements to our campaign:**
+To make the impact of your donation really clear, your ${giftAmount} donation is enough to add any one of the following key elements to our campaign:
 
-**5 - Large 4' by 8' roadway signs**
+${impact.roadwaySigns} - Large 4' by 8' ${pluralize(impact.roadwaySigns, "roadway sign")}
 
-**15 - Medium 4' x 4' signs in highly visible spots across our cities**
+${impact.mediumSigns} - Medium 4' x 4' ${pluralize(impact.mediumSigns, "sign")} in highly visible spots across our cities
 
-**35 t-shirts**
+${impact.tShirts} ${pluralize(impact.tShirts, "t-shirt")}
 
-**1/3 of one of our branded, pop up event tent**
+${impact.tents} of our branded, pop up event ${pluralize(impact.tentCountForPlural, "tent")}
 
-**1200 buttons, or**
+${impact.buttons} ${pluralize(impact.buttons, "button")}, or
 
-**85 Lawn Signs!**
+${impact.lawnSigns} Lawn ${pluralize(impact.lawnSigns, "Sign")}!
 
-**None of this happens without people like you deciding this mattered enough to back it with a donation.**
+None of this happens without people like you deciding this mattered enough to back it with a donation.
 
-**We know what we're up against. Ten questions designed to divide Albertans, pull us away from each other, and pull us away from Canada. But we also know that ordinary Albertans - donating, volunteering, putting up a sign, talking to a neighbour - are exactly how campaigns like this get won.**
+We know what we're up against. Ten questions designed to divide Albertans, pull us away from each other, and pull us away from Canada. But we also know that ordinary Albertans - donating, volunteering, putting up a sign, talking to a neighbour - are exactly how campaigns like this get won.
 
-**Thank you for being one of them.**
+Thank you for being one of them.
 
-**If you haven't yet, we'd love for you to become a captain at join.albertasvoice.ca and help us reach even more Albertans before referendum day.**
+If you haven't yet, we'd love for you to become a captain at join.albertasvoice.ca and help us reach even more Albertans before referendum day.
 
-**Once again, our most heartfelt thank you to you.**
+Once again, our most heartfelt thank you to you.
 
-**Keep up the great work. Stay in Canada. No to the Nine.**
+Keep up the great work. Stay in Canada. No to the Nine.
 
-**Stephen & Stephen**  
-**Alberta's Voice**`;
+Stephen & Stephen  
+Alberta's Voice`;
 }
 
 export function ThankEmailComposer({
@@ -123,9 +124,6 @@ export function ThankEmailComposer({
               </div>
               <div className="px-6 py-8 text-base leading-7 text-[#374151] sm:px-10">
                 {previewBlocks}
-                <div className="my-9 text-center">
-                  <span className="inline-block rounded-lg bg-[#c8102e] px-8 py-4 font-bold text-white">Become a Captain</span>
-                </div>
                 <p className="mb-4 text-sm leading-6 text-[#6b7280]">
                   You are receiving this thank-you because you donated to Alberta&apos;s Voice.
                 </p>
@@ -171,7 +169,51 @@ export function ThankEmailComposer({
 function formatGiftAmount(amount: string) {
   const trimmed = amount.trim();
   if (!trimmed) return "$[AMOUNT]";
-  return trimmed.startsWith("$") ? trimmed : `$${trimmed}`;
+  const parsed = parseDonationAmount(trimmed);
+  if (!parsed) return trimmed.startsWith("$") ? trimmed : `$${trimmed}`;
+  return parsed.toLocaleString("en-CA", {
+    style: "currency",
+    currency: "CAD",
+    maximumFractionDigits: parsed % 1 === 0 ? 0 : 2
+  });
+}
+
+function donationImpact(amount: string) {
+  const multiplier = Math.max((parseDonationAmount(amount) || 500) / 500, 0);
+  const tentThirds = Math.max(1, Math.ceil(multiplier));
+
+  return {
+    roadwaySigns: scaledQuantity(5, multiplier),
+    mediumSigns: scaledQuantity(15, multiplier),
+    tShirts: scaledQuantity(35, multiplier),
+    tents: formatTentQuantity(tentThirds),
+    tentCountForPlural: Math.ceil(tentThirds / 3),
+    buttons: scaledQuantity(1200, multiplier),
+    lawnSigns: scaledQuantity(85, multiplier)
+  };
+}
+
+function scaledQuantity(base: number, multiplier: number) {
+  return Math.max(1, Math.ceil(base * multiplier));
+}
+
+function formatTentQuantity(thirds: number) {
+  const whole = Math.floor(thirds / 3);
+  const remainder = thirds % 3;
+  if (!whole && remainder === 1) return "1/3";
+  if (!whole && remainder === 2) return "2/3";
+  if (whole && !remainder) return String(whole);
+  return `${whole} ${remainder}/3`;
+}
+
+function pluralize(count: number, singular: string) {
+  if (count === 1) return singular;
+  return `${singular}s`;
+}
+
+function parseDonationAmount(amount: string) {
+  const parsed = Number(amount.replace(/[$,\s]/g, ""));
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
 function markdownToPreviewBlocks(markdown: string) {
