@@ -309,31 +309,42 @@ function formatGiftAmount(amount: string) {
 }
 
 function donationImpact(amount: string) {
-  const multiplier = Math.max((parseDonationAmount(amount) || 500) / 500, 0);
-  const tentThirds = Math.max(1, Math.ceil(multiplier));
+  const donation = parseDonationAmount(amount) || 500;
 
   return {
-    roadwaySigns: scaledQuantity(5, multiplier),
-    mediumSigns: scaledQuantity(15, multiplier),
-    tShirts: scaledQuantity(35, multiplier),
-    tents: formatTentQuantity(tentThirds),
-    tentCountForPlural: Math.ceil(tentThirds / 3),
-    buttons: scaledQuantity(1200, multiplier),
-    lawnSigns: scaledQuantity(85, multiplier)
+    roadwaySigns: roundedAtLeastOne(donation / 100),
+    mediumSigns: mroundAtLeastOne(donation / 30, 5),
+    tShirts: mroundAtLeastOne(donation / 15, 5),
+    tents: formatTentQuantity(donation / 1500),
+    tentCountForPlural: Math.ceil(donation / 1500),
+    buttons: mroundAtLeastOne(donation / 0.43, 100),
+    lawnSigns: mroundAtLeastOne(donation / 6, 5)
   };
 }
 
-function scaledQuantity(base: number, multiplier: number) {
-  return Math.max(1, Math.ceil(base * multiplier));
+function roundedAtLeastOne(value: number) {
+  return Math.max(1, Math.round(value));
 }
 
-function formatTentQuantity(thirds: number) {
-  const whole = Math.floor(thirds / 3);
-  const remainder = thirds % 3;
-  if (!whole && remainder === 1) return "1/3";
-  if (!whole && remainder === 2) return "2/3";
-  if (whole && !remainder) return String(whole);
-  return `${whole} ${remainder}/3`;
+function mroundAtLeastOne(value: number, multiple: number) {
+  return Math.max(1, Math.round(value / multiple) * multiple);
+}
+
+function formatTentQuantity(tents: number) {
+  if (tents < 1) return formatFraction(tents);
+  const rounded = Math.round(tents * 10) / 10;
+  return rounded % 1 === 0 ? String(rounded) : rounded.toFixed(1);
+}
+
+function formatFraction(value: number) {
+  const denominator = 10;
+  const numerator = Math.max(1, Math.round(value * denominator));
+  const divisor = greatestCommonDivisor(numerator, denominator);
+  return `${numerator / divisor}/${denominator / divisor}`;
+}
+
+function greatestCommonDivisor(a: number, b: number): number {
+  return b === 0 ? a : greatestCommonDivisor(b, a % b);
 }
 
 function pluralize(count: number, singular: string) {
