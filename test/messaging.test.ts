@@ -87,3 +87,17 @@ describe("email invite text", () => {
     );
   });
 });
+
+describe("email thank-you html", () => {
+  it("uses the Alberta's Voice template without a CTA button", async () => {
+    const { emailThankYouHtml } = await import("@/lib/messaging");
+
+    const html = emailThankYouHtml("Hi Friend,\n\n**Thank you so much.**");
+
+    expect(html).toContain("https://albertasvoice.ca/assets/logo-email.png");
+    expect(html).toContain("<strong>Thank you so much.</strong>");
+    expect(html).toContain("You are receiving this thank-you because you donated");
+    expect(html).not.toContain("Become a Captain");
+    expect(html).not.toContain("<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" align=\"center\" style=\"margin:40px auto;\">");
+  });
+});
