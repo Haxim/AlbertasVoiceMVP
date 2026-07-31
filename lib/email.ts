@@ -15,7 +15,7 @@ export async function sendEmail({
   text: string;
   html?: string;
   fromName?: string;
-  fromEmailEnv: "BROADCAST_FROM_EMAIL" | "INVITE_FROM_EMAIL";
+  fromEmailEnv: "BROADCAST_FROM_EMAIL" | "INVITE_FROM_EMAIL" | "THANK_FROM_EMAIL";
   idempotencyKey?: string;
   replyTo?: string;
 }) {
@@ -49,7 +49,7 @@ export async function sendEmailBatch({
   idempotencyKey
 }: {
   emails: Array<{ to: string; subject: string; text: string; html?: string; fromName?: string; replyTo?: string }>;
-  fromEmailEnv: "BROADCAST_FROM_EMAIL" | "INVITE_FROM_EMAIL";
+  fromEmailEnv: "BROADCAST_FROM_EMAIL" | "INVITE_FROM_EMAIL" | "THANK_FROM_EMAIL";
   idempotencyKey: string;
 }) {
   const apiKey = await runtimeEnv("RESEND_API_KEY");

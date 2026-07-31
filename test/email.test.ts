@@ -16,7 +16,8 @@ describe("sendEmail", () => {
       const values: Record<string, string> = {
         RESEND_API_KEY: "resend-api-key",
         BROADCAST_FROM_EMAIL: "broadcast@example.test",
-        INVITE_FROM_EMAIL: "invite@example.test"
+        INVITE_FROM_EMAIL: "invite@example.test",
+        THANK_FROM_EMAIL: "thank@example.test"
       };
       return values[name];
     });
@@ -50,6 +51,19 @@ describe("sendEmail", () => {
     const [, init] = vi.mocked(fetch).mock.calls[0];
     const payload = JSON.parse(String(init?.body));
     expect(payload.from).toBe("\"Alberta's Voice\" <invite@example.test>");
+  });
+
+  it("uses the requested thank-you sender when configured", async () => {
+    await sendEmail({
+      to: "donor@example.test",
+      subject: "Thank you",
+      text: "Hello",
+      fromEmailEnv: "THANK_FROM_EMAIL"
+    });
+
+    const [, init] = vi.mocked(fetch).mock.calls[0];
+    const payload = JSON.parse(String(init?.body));
+    expect(payload.from).toBe("\"Alberta's Voice\" <thank@example.test>");
   });
 
   it("passes an idempotency key to Resend when provided", async () => {

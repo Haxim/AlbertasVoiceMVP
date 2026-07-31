@@ -1,4 +1,4 @@
-export type Role = "CAPTAIN" | "ADMIN";
+export type Role = "CAPTAIN" | "ADMIN" | "THANK";
 export type InviteStatus = "PENDING" | "ACCEPTED" | "DECLINED" | "EXPIRED" | "UNSUBSCRIBED";
 export type Preference = "ALL_UPDATES" | "WEEKLY_DIGEST" | "VOTE_REMINDER_ONLY";
 export type PreferenceFilter = Preference | "ALL";

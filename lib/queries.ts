@@ -63,7 +63,7 @@ export async function getAdminCounts() {
   noStore();
   const service = createServiceClient();
   const [captains, invites, subscribers, suppressed] = await Promise.all([
-    service.from("profiles").select("id", { count: "exact", head: true }).eq("role", "CAPTAIN"),
+    service.from("profiles").select("id", { count: "exact", head: true }).in("role", ["CAPTAIN", "THANK"]),
     service.from("invites").select("id", { count: "exact", head: true }),
     service.from("subscribers").select("id", { count: "exact", head: true }).is("unsubscribed_at", null),
     service.from("suppression_list").select("id", { count: "exact", head: true })

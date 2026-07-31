@@ -68,7 +68,7 @@ export async function exportCaptainsCsv() {
   const { data, error } = await service
     .from("profiles")
     .select("name,email,created_at")
-    .eq("role", "CAPTAIN")
+    .in("role", ["CAPTAIN", "THANK"])
     .order("created_at", { ascending: false });
   if (error) throw error;
   const header = ["name", "email", "created_at"].join(",");
@@ -359,7 +359,7 @@ async function getCaptainEmailAudience() {
   const { data, error } = await service
     .from("profiles")
     .select("id,name,email")
-    .eq("role", "CAPTAIN")
+    .in("role", ["CAPTAIN", "THANK"])
     .not("email", "is", null)
     .order("created_at", { ascending: true });
   if (error) throw error;

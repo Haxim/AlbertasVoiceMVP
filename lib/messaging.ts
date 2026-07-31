@@ -131,6 +131,27 @@ export function emailInternalBroadcastHtml(body: string) {
   });
 }
 
+export function emailThankYouText(body: string) {
+  return `${body}
+
+--
+Alberta's Voice
+Authorized by Alberta's Voice, Referendum Third Party Advertiser.
+Contact: info@albertasvoice.ca
+Website: https://albertasvoice.ca
+TPA/compliance statement: https://albertasvoice.ca/disclaimer
+`;
+}
+
+export function emailThankYouHtml(body: string) {
+  return renderAlbertaVoiceEmail({
+    body,
+    ctaUrl: "https://join.albertasvoice.ca",
+    ctaLabel: "Become a Captain",
+    notice: "You are receiving this thank-you because you donated to Alberta's Voice."
+  });
+}
+
 function renderAlbertaVoiceEmail({
   body,
   ctaUrl,
