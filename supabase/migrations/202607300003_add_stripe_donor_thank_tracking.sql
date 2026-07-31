@@ -11,7 +11,7 @@ create table if not exists public.stripe_donors (
   synced_at timestamptz not null default now(),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (email, currency)
+  unique (name, email, currency)
 );
 
 alter table public.stripe_donors
@@ -47,7 +47,12 @@ add column if not exists created_at timestamptz not null default now();
 alter table public.stripe_donors
 add column if not exists updated_at timestamptz not null default now();
 
-create unique index if not exists stripe_donors_email_currency_unique on public.stripe_donors(email, currency);
+drop index if exists public.stripe_donors_email_currency_unique;
+
+alter table public.stripe_donors
+drop constraint if exists stripe_donors_email_currency_key;
+
+create unique index if not exists stripe_donors_name_email_currency_unique on public.stripe_donors(name, email, currency);
 create index if not exists stripe_donors_amount_idx on public.stripe_donors(amount_cents desc);
 create index if not exists stripe_donors_thank_you_sent_at_idx on public.stripe_donors(thank_you_sent_at desc);
 

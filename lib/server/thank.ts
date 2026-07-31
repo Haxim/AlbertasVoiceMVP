@@ -102,7 +102,7 @@ export async function syncStripeDonorsOverThreshold() {
       synced_at: now,
       updated_at: now
     })),
-    { onConflict: "email,currency" }
+    { onConflict: "name,email,currency" }
   );
   if (error) throw error;
   return { synced: donors.length, scanned: charges.length };
@@ -121,6 +121,9 @@ type StripeCharge = {
   billing_details?: {
     name?: string | null;
     email?: string | null;
+  } | null;
+  shipping?: {
+    name?: string | null;
   } | null;
   receipt_email?: string | null;
 };
@@ -165,23 +168,24 @@ export function aggregateStripeDonorsForThankYou(charges: StripeCharge[]) {
   for (const charge of charges) {
     if (!isSuccessfulDonationCharge(charge)) continue;
     const email = (charge.billing_details?.email || charge.receipt_email || "").trim().toLowerCase();
-    if (!email) continue;
+    const donorName = charge.shipping?.name?.trim();
+    if (!email || !donorName) continue;
     const currency = charge.currency.toLowerCase();
-    const key = `${email}:${currency}`;
+    const key = `${donorName.toLowerCase()}:${email}:${currency}`;
     const amount = charge.amount_captured || charge.amount;
     const donatedAt = new Date(charge.created * 1000).toISOString();
     const current = donors.get(key);
     if (current) {
       current.amount_cents += amount;
       current.charge_count += 1;
-      if (!current.name && charge.billing_details?.name) current.name = charge.billing_details.name;
+      if (!current.name) current.name = donorName;
       if (!current.stripe_customer_id && charge.customer) current.stripe_customer_id = charge.customer;
       if (!current.last_donation_at || current.last_donation_at < donatedAt) current.last_donation_at = donatedAt;
       continue;
     }
     donors.set(key, {
       stripe_customer_id: charge.customer || null,
-      name: charge.billing_details?.name || null,
+      name: donorName,
       email,
       currency,
       amount_cents: amount,
