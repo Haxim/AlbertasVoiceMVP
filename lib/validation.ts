@@ -63,5 +63,6 @@ export const thankYouEmailSchema = z.object({
   to: z.string().trim().email(),
   subject: z.string().trim().min(3).max(160),
   body: z.string().trim().min(10).max(5000),
+  donorId: z.string().uuid().optional().or(z.literal("")),
   confirmConsent: z.literal("yes")
 });
