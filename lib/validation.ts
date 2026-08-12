@@ -83,3 +83,9 @@ export const updateBoardTopicSchema = z.object({
   pinned: z.boolean(),
   locked: z.boolean()
 });
+
+export const updateBoardPostVisibilitySchema = z.object({
+  topicId: z.string().uuid(),
+  postId: z.string().uuid(),
+  hidden: z.boolean()
+});

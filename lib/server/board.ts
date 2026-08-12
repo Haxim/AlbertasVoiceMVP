@@ -179,6 +179,23 @@ export async function updateBoardTopicModeration({
   if (error) throw error;
 }
 
+export async function updateBoardPostVisibility({
+  admin,
+  postId,
+  hidden
+}: {
+  admin: Profile;
+  postId: string;
+  hidden: boolean;
+}) {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("board_posts")
+    .update({ hidden_at: hidden ? new Date().toISOString() : null, hidden_by: hidden ? admin.id : null })
+    .eq("id", postId);
+  if (error) throw error;
+}
+
 async function countBoardTopics(categoryId: string) {
   const supabase = await createSupabaseServerClient();
   const { count, error } = await supabase

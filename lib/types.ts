@@ -76,6 +76,8 @@ export type BoardPost = {
   topic_id: string;
   author_id: string;
   body: string;
+  hidden_at: string | null;
+  hidden_by: string | null;
   created_at: string;
   updated_at: string;
 };
