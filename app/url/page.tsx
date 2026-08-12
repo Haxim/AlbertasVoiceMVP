@@ -10,10 +10,10 @@ export default async function CaptainReferralUrlPage({
   searchParams?: Promise<{ captainid?: string; captainId?: string; message?: string; error?: string }>;
 }) {
   const params = await searchParams;
-  const captainId = params?.captainid || params?.captainId || "";
-  if (!captainId) notFound();
+  const captainCode = params?.captainid || params?.captainId || "";
+  if (!captainCode) notFound();
 
-  const captain = await getCaptainForSelfReferral(captainId);
+  const captain = await getCaptainForSelfReferral(captainCode);
   if (!captain) notFound();
 
   const captainName = captain.name || "A local captain";
@@ -36,7 +36,7 @@ export default async function CaptainReferralUrlPage({
         {params?.error ? <p className="mt-5 rounded-md bg-rose/10 p-3 text-sm font-medium text-rose">{params.error}</p> : null}
 
         <form action={createSelfReferral} className="mt-6 space-y-4">
-          <input type="hidden" name="captainId" value={captain.id} />
+          <input type="hidden" name="captainCode" value={captainCode} />
           <label className="block">
             <span className="text-sm font-medium">Email</span>
             <input

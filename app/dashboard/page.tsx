@@ -6,9 +6,10 @@ import { logout } from "@/lib/actions/auth";
 import { getCaptainDashboard } from "@/lib/queries";
 import { getCurrentProfile } from "@/lib/auth";
 import { StatusBadge } from "@/components/status-badge";
+import { CopyLinkField } from "@/components/copy-link-field";
 import { Turnstile } from "@/components/turnstile";
 import { runtimeEnv } from "@/lib/runtime-env";
-import { replyToAddressForCaptain } from "@/lib/server/captain-messages";
+import { ensureCaptainEmailAlias, replyToAddressForCaptain } from "@/lib/server/captain-messages";
 import { getInviteEmailResendAvailability } from "@/lib/server/invites";
 import { getRuntimeAppUrl } from "@/lib/app-url";
 
@@ -23,7 +24,8 @@ export default async function DashboardPage({
   const dashboard = await getCaptainDashboard(profile.id);
   const turnstileSiteKey = await runtimeEnv("NEXT_PUBLIC_TURNSTILE_SITE_KEY");
   const captainReplyAddress = await replyToAddressForCaptain(profile);
-  const selfReferralUrl = `${await getRuntimeAppUrl()}/url?captainid=${profile.id}`;
+  const captainAlias = await ensureCaptainEmailAlias(profile);
+  const selfReferralUrl = `${await getRuntimeAppUrl()}/url?captainid=${captainAlias}`;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8">
@@ -48,11 +50,7 @@ export default async function DashboardPage({
         <p className="mt-2 text-sm leading-6 text-ink/70">
           Share this link with people who want to request an Alberta&apos;s Voice invitation from you.
         </p>
-        <input
-          readOnly
-          value={selfReferralUrl}
-          className="focus-ring mt-3 w-full rounded-md border border-line bg-field px-3 py-2 font-mono text-sm"
-        />
+        <CopyLinkField value={selfReferralUrl} />
       </section>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">

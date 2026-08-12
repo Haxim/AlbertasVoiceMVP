@@ -55,7 +55,7 @@ export async function replyToAddressForCaptain(captain: Profile) {
   return `${alias}@${CAPTAIN_REPLY_DOMAIN}`;
 }
 
-async function ensureCaptainEmailAlias(captain: Profile) {
+export async function ensureCaptainEmailAlias(captain: Profile) {
   if (captain.captain_email_alias) return captain.captain_email_alias;
 
   const service = createServiceClient();
