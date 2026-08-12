@@ -3,8 +3,14 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireCaptain } from "@/lib/auth";
-import { acceptInviteSchema, createInviteSchema, resendInviteSchema, tokenSchema } from "@/lib/validation";
-import { acceptInviteByToken, createInviteForCaptain, declineInviteByToken, resendInviteEmailForCaptain } from "@/lib/server/invites";
+import { acceptInviteSchema, createInviteSchema, resendInviteSchema, selfReferralInviteSchema, tokenSchema } from "@/lib/validation";
+import {
+  acceptInviteByToken,
+  createInviteForCaptain,
+  createSelfReferralInvite,
+  declineInviteByToken,
+  resendInviteEmailForCaptain
+} from "@/lib/server/invites";
 import { getRequestIp, verifyTurnstileToken } from "@/lib/turnstile";
 
 export async function createInvite(formData: FormData) {
@@ -41,6 +47,27 @@ export async function resendInviteEmail(formData: FormData) {
   redirect(`/dashboard?message=${encodeURIComponent("Invite email resent.")}`);
 }
 
+export async function createSelfReferral(formData: FormData) {
+  const parsed = selfReferralInviteSchema.safeParse({
+    captainId: formData.get("captainId"),
+    email: formData.get("email")
+  });
+  if (!parsed.success) {
+    const captainId = String(formData.get("captainId") || "");
+    redirect(`/url?captainid=${encodeURIComponent(captainId)}&error=${encodeURIComponent(parsed.error.issues[0]?.message || "Invalid email.")}`);
+  }
+
+  const h = await headers();
+  try {
+    await verifyTurnstileToken(formData.get("cf-turnstile-response"), getRequestIp(h));
+    await createSelfReferralInvite(parsed.data.captainId, parsed.data.email);
+  } catch (error) {
+    console.warn("Self-referral invite failed:", error);
+    redirect(`/url?captainid=${parsed.data.captainId}&message=${encodeURIComponent(selfReferralConfirmationMessage())}`);
+  }
+  redirect(`/url?captainid=${parsed.data.captainId}&message=${encodeURIComponent(selfReferralConfirmationMessage())}`);
+}
+
 export async function acceptInvite(formData: FormData) {
   const parsed = acceptInviteSchema.parse({
     token: formData.get("token"),
@@ -61,6 +88,10 @@ export async function acceptInvite(formData: FormData) {
     }
   );
   redirect("/invite/thanks");
+}
+
+function selfReferralConfirmationMessage() {
+  return "If this email can receive an invitation, we'll send the next step shortly.";
 }
 
 export async function declineInvite(formData: FormData) {
