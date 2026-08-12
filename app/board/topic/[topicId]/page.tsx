@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Route } from "next";
 import { notFound, redirect } from "next/navigation";
-import { createBoardReply, updateBoardTopic } from "@/lib/actions/board";
+import { createBoardReply, updateBoardPost, updateBoardTopic } from "@/lib/actions/board";
 import { getCurrentProfile } from "@/lib/auth";
 import { getBoardTopic } from "@/lib/server/board";
 
@@ -64,14 +64,32 @@ export default async function BoardTopicPage({
 
       <section className="mt-6 space-y-4">
         {topic.posts.map((post, index) => (
-          <article key={post.id} className="rounded-lg border border-line bg-white p-5">
+          <article
+            key={post.id}
+            className={`rounded-lg border p-5 ${post.hidden_at ? "border-rose/30 bg-rose/5" : "border-line bg-white"}`}
+          >
             <div className="flex flex-col justify-between gap-2 border-b border-line pb-3 sm:flex-row sm:items-center">
               <div>
-                <p className="font-semibold">{displayName(post.author)}</p>
+                <p className="font-semibold">
+                  {displayName(post.author)}
+                  {post.hidden_at ? <span className="ml-2 text-sm font-medium text-rose">Hidden</span> : null}
+                </p>
                 <p className="text-xs text-ink/55">{index === 0 ? "Original post" : "Reply"} · {formatDate(post.created_at)}</p>
               </div>
+              {isAdmin ? (
+                <form action={updateBoardPost}>
+                  <input type="hidden" name="topicId" value={topic.id} />
+                  <input type="hidden" name="postId" value={post.id} />
+                  <input type="hidden" name="hidden" value={post.hidden_at ? "no" : "yes"} />
+                  <button className="focus-ring rounded-md border border-line bg-white px-3 py-1.5 text-sm font-semibold">
+                    {post.hidden_at ? "Restore" : "Hide"}
+                  </button>
+                </form>
+              ) : null}
             </div>
-            <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-ink">{post.body}</p>
+            <div className="mt-4 whitespace-pre-wrap text-sm leading-6 text-ink">
+              <LinkedText text={post.body} />
+            </div>
           </article>
         ))}
       </section>
@@ -112,4 +130,34 @@ function formatDate(value: string) {
     hour: "numeric",
     minute: "2-digit"
   }).format(new Date(value));
+}
+
+function LinkedText({ text }: { text: string }) {
+  const parts = text.split(/(https?:\/\/[^\s<>"']+)/g);
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (!/^https?:\/\//i.test(part)) return <span key={index}>{part}</span>;
+        const url = trimTrailingPunctuation(part);
+        const trailing = part.slice(url.length);
+        return (
+          <span key={index}>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="focus-ring font-semibold text-spruce underline underline-offset-4"
+            >
+              {url}
+            </a>
+            {trailing}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
+function trimTrailingPunctuation(value: string) {
+  return value.replace(/[),.;:!?]+$/g, "");
 }

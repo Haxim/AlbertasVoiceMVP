@@ -22,6 +22,8 @@ create table public.board_posts (
   topic_id uuid not null references public.board_topics(id) on delete cascade,
   author_id uuid not null references public.profiles(id) on delete cascade,
   body text not null check (char_length(trim(body)) between 2 and 5000),
+  hidden_at timestamptz,
+  hidden_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -90,8 +92,8 @@ for insert with check (author_id = auth.uid());
 create policy "board_topics_update_admin" on public.board_topics
 for update using (public.is_admin()) with check (public.is_admin());
 
-create policy "board_posts_select_authenticated" on public.board_posts
-for select using (auth.uid() is not null);
+create policy "board_posts_select_authenticated_visible" on public.board_posts
+for select using (auth.uid() is not null and (hidden_at is null or public.is_admin()));
 
 create policy "board_posts_insert_authenticated_unlocked" on public.board_posts
 for insert with check (
@@ -104,6 +106,5 @@ for insert with check (
   )
 );
 
-create policy "board_posts_update_author_or_admin" on public.board_posts
-for update using (author_id = auth.uid() or public.is_admin())
-with check (author_id = auth.uid() or public.is_admin());
+create policy "board_posts_update_admin" on public.board_posts
+for update using (public.is_admin()) with check (public.is_admin());
