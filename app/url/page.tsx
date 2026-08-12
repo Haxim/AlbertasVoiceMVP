@@ -22,8 +22,7 @@ export default async function CaptainReferralUrlPage({
   return (
     <main className="mx-auto max-w-xl px-4 py-12">
       <div className="rounded-lg border border-line bg-white p-6 shadow-sm shadow-sky/10">
-        <p className="text-sm font-semibold uppercase tracking-wide text-spruce">Alberta&apos;s Voice</p>
-        <h1 className="mt-2 text-3xl font-bold">{captainName} invited you to get updates from Alberta&apos;s Voice.</h1>
+        <h1 className="text-3xl font-bold">{captainName} invited you to get updates from Alberta&apos;s Voice.</h1>
         <p className="mt-4 leading-7 text-ink/75">
           Alberta&apos;s Voice is a grassroots campaign working to keep Alberta in Canada and encourage Albertans to vote
           No on the nine referendum questions.
