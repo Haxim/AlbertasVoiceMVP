@@ -49,23 +49,23 @@ export async function resendInviteEmail(formData: FormData) {
 
 export async function createSelfReferral(formData: FormData) {
   const parsed = selfReferralInviteSchema.safeParse({
-    captainId: formData.get("captainId"),
+    captainCode: formData.get("captainCode"),
     email: formData.get("email")
   });
   if (!parsed.success) {
-    const captainId = String(formData.get("captainId") || "");
-    redirect(`/url?captainid=${encodeURIComponent(captainId)}&error=${encodeURIComponent(parsed.error.issues[0]?.message || "Invalid email.")}`);
+    const captainCode = String(formData.get("captainCode") || "");
+    redirect(`/url?captainid=${encodeURIComponent(captainCode)}&error=${encodeURIComponent(parsed.error.issues[0]?.message || "Invalid email.")}`);
   }
 
   const h = await headers();
   try {
     await verifyTurnstileToken(formData.get("cf-turnstile-response"), getRequestIp(h));
-    await createSelfReferralInvite(parsed.data.captainId, parsed.data.email);
+    await createSelfReferralInvite(parsed.data.captainCode, parsed.data.email);
   } catch (error) {
     console.warn("Self-referral invite failed:", error);
-    redirect(`/url?captainid=${parsed.data.captainId}&message=${encodeURIComponent(selfReferralConfirmationMessage())}`);
+    redirect(`/url?captainid=${parsed.data.captainCode}&message=${encodeURIComponent(selfReferralConfirmationMessage())}`);
   }
-  redirect(`/url?captainid=${parsed.data.captainId}&message=${encodeURIComponent(selfReferralConfirmationMessage())}`);
+  redirect(`/url?captainid=${parsed.data.captainCode}&message=${encodeURIComponent(selfReferralConfirmationMessage())}`);
 }
 
 export async function acceptInvite(formData: FormData) {

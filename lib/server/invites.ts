@@ -124,20 +124,20 @@ export async function resendInviteEmailForCaptain(captain: Profile, inviteId: st
   });
 }
 
-export async function getCaptainForSelfReferral(captainId: string) {
+export async function getCaptainForSelfReferral(captainCode: string) {
   const service = createServiceClient();
   const { data, error } = await service
     .from("profiles")
     .select("id,name,email,role,created_at,captain_email_alias")
-    .eq("id", captainId)
+    .eq("captain_email_alias", captainCode)
     .in("role", ["CAPTAIN", "ADMIN"])
     .maybeSingle();
   if (error) throw error;
   return (data as Profile | null) || null;
 }
 
-export async function createSelfReferralInvite(captainId: string, email: string) {
-  const captain = await getCaptainForSelfReferral(captainId);
+export async function createSelfReferralInvite(captainCode: string, email: string) {
+  const captain = await getCaptainForSelfReferral(captainCode);
   if (!captain) throw new Error("Captain link not found.");
   return createInviteForCaptain(captain, {
     inviteeName: "friend",
