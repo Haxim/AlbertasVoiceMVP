@@ -25,7 +25,7 @@ export async function createInviteForCaptain(
     .select("id", { count: "exact", head: true })
     .eq("captain_id", captain.id)
     .gte("created_at", oneHourAgo);
-  if ((recentCount || 0) >= 25) throw new Error("Invite rate limit reached. Try again later.");
+  if ((recentCount || 0) >= 50) throw new Error("Invite rate limit reached. Try again later.");
 
   const [inviteMatches, subscriberMatches, suppressionMatches] = await Promise.all([
     findContactRows("invites", normalized_email, normalized_phone),
@@ -121,6 +121,27 @@ export async function resendInviteEmailForCaptain(captain: Profile, inviteId: st
     event_type: "INVITE_RESENT",
     channel: "EMAIL",
     metadata: { captain_id: captain.id }
+  });
+}
+
+export async function getCaptainForSelfReferral(captainId: string) {
+  const service = createServiceClient();
+  const { data, error } = await service
+    .from("profiles")
+    .select("id,name,email,role,created_at,captain_email_alias")
+    .eq("id", captainId)
+    .in("role", ["CAPTAIN", "ADMIN"])
+    .maybeSingle();
+  if (error) throw error;
+  return (data as Profile | null) || null;
+}
+
+export async function createSelfReferralInvite(captainId: string, email: string) {
+  const captain = await getCaptainForSelfReferral(captainId);
+  if (!captain) throw new Error("Captain link not found.");
+  return createInviteForCaptain(captain, {
+    inviteeName: "friend",
+    email
   });
 }
 

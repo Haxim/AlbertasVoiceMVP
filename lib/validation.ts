@@ -27,6 +27,11 @@ export const resendInviteSchema = z.object({
   inviteId: z.string().uuid()
 });
 
+export const selfReferralInviteSchema = z.object({
+  captainId: z.string().uuid(),
+  email: z.string().trim().email("Add a valid email address.")
+});
+
 export const subscriptionTokenSchema = z.object({
   token: z.string().min(20)
 });
