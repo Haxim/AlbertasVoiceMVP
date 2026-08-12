@@ -66,3 +66,20 @@ export const thankYouEmailSchema = z.object({
   donorId: z.string().uuid().optional().or(z.literal("")),
   confirmConsent: z.literal("yes")
 });
+
+export const createBoardTopicSchema = z.object({
+  categorySlug: z.string().trim().min(2).max(80),
+  title: z.string().trim().min(3, "Add a topic title.").max(140, "Keep the title under 140 characters."),
+  body: z.string().trim().min(2, "Add a first post.").max(5000, "Keep posts under 5,000 characters.")
+});
+
+export const createBoardReplySchema = z.object({
+  topicId: z.string().uuid(),
+  body: z.string().trim().min(2, "Add a reply.").max(5000, "Keep replies under 5,000 characters.")
+});
+
+export const updateBoardTopicSchema = z.object({
+  topicId: z.string().uuid(),
+  pinned: z.boolean(),
+  locked: z.boolean()
+});
