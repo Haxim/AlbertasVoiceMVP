@@ -87,7 +87,9 @@ export default async function BoardTopicPage({
                 </form>
               ) : null}
             </div>
-            <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-ink">{post.body}</p>
+            <div className="mt-4 whitespace-pre-wrap text-sm leading-6 text-ink">
+              <LinkedText text={post.body} />
+            </div>
           </article>
         ))}
       </section>
@@ -128,4 +130,34 @@ function formatDate(value: string) {
     hour: "numeric",
     minute: "2-digit"
   }).format(new Date(value));
+}
+
+function LinkedText({ text }: { text: string }) {
+  const parts = text.split(/(https?:\/\/[^\s<>"']+)/g);
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (!/^https?:\/\//i.test(part)) return <span key={index}>{part}</span>;
+        const url = trimTrailingPunctuation(part);
+        const trailing = part.slice(url.length);
+        return (
+          <span key={index}>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="focus-ring font-semibold text-spruce underline underline-offset-4"
+            >
+              {url}
+            </a>
+            {trailing}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
+function trimTrailingPunctuation(value: string) {
+  return value.replace(/[),.;:!?]+$/g, "");
 }
