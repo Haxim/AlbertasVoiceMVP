@@ -51,3 +51,31 @@ export type Subscriber = {
   created_at: string;
   updated_at: string;
 };
+
+export type BoardCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  sort_order: number;
+  created_at: string;
+};
+
+export type BoardTopic = {
+  id: string;
+  category_id: string;
+  author_id: string;
+  title: string;
+  pinned: boolean;
+  locked: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type BoardPost = {
+  id: string;
+  topic_id: string;
+  author_id: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
+};

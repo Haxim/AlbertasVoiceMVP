@@ -28,6 +28,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/help" className="hover:text-spruce">
                 Captain help
               </Link>
+              {profile ? (
+                <Link href={"/board" as Route} className="hover:text-spruce">
+                  Board
+                </Link>
+              ) : null}
               {profile?.role === "ADMIN" ? (
                 <Link href="/admin" className="hover:text-spruce">
                   Admin
