@@ -6,6 +6,7 @@ import { filterSubscribersByPreference } from "@/lib/rules";
 import type { BroadcastAudience, PreferenceFilter, Profile } from "@/lib/types";
 
 const EMAIL_BROADCAST_BATCH_SIZE = 100;
+const SUPABASE_PAGE_SIZE = 1000;
 
 type SubscriberAudienceRow = {
   id: string;
@@ -51,16 +52,27 @@ export async function previewAudienceCount(audience: BroadcastAudience, preferen
 }
 
 export async function exportSubscribersCsv(preference: PreferenceFilter) {
-  const service = createServiceClient();
-  const { data, error } = await service
-    .from("subscribers")
-    .select("name,email,phone,preference,consented_at,unsubscribed_at")
-    .order("created_at", { ascending: false });
-  if (error) throw error;
+  const data = await fetchSubscriberCsvRows();
   const rows = filterSubscribersByPreference(data || [], preference);
   const header = ["name", "email", "phone", "preference", "consented_at"].join(",");
   const body = rows.map((row) => [row.name, row.email, row.phone, row.preference, row.consented_at].map(csvCell).join(","));
   return [header, ...body].join("\n");
+}
+
+async function fetchSubscriberCsvRows() {
+  const service = createServiceClient();
+  const rows = [];
+  for (let from = 0; ; from += SUPABASE_PAGE_SIZE) {
+    const { data, error } = await service
+      .from("subscribers")
+      .select("name,email,phone,preference,consented_at,unsubscribed_at")
+      .order("created_at", { ascending: false })
+      .range(from, from + SUPABASE_PAGE_SIZE - 1);
+    if (error) throw error;
+    rows.push(...(data || []));
+    if (!data || data.length < SUPABASE_PAGE_SIZE) break;
+  }
+  return rows;
 }
 
 export async function exportCaptainsCsv() {
@@ -77,21 +89,31 @@ export async function exportCaptainsCsv() {
 }
 
 export async function getCaptainSignupReport(filters: CaptainSignupReportFilters) {
-  const service = createServiceClient();
-  let query = service
-    .from("subscribers")
-    .select("captain_id,consented_at,unsubscribed_at,profiles:captain_id(name,email)")
-    .not("captain_id", "is", null)
-    .not("consented_at", "is", null)
-    .order("consented_at", { ascending: true });
-
-  if (filters.startDate) query = query.gte("consented_at", startOfDate(filters.startDate));
-  if (filters.endDate) query = query.lt("consented_at", dayAfter(filters.endDate));
-
-  const { data, error } = await query;
-  if (error) throw error;
-
+  const data = await fetchCaptainSignupSourceRows(filters);
   return buildCaptainSignupReportRows(data || [], filters.minSignups);
+}
+
+async function fetchCaptainSignupSourceRows(filters: CaptainSignupReportFilters) {
+  const service = createServiceClient();
+  const rows = [];
+  for (let from = 0; ; from += SUPABASE_PAGE_SIZE) {
+    let query = service
+      .from("subscribers")
+      .select("captain_id,consented_at,unsubscribed_at,profiles:captain_id(name,email)")
+      .not("captain_id", "is", null)
+      .not("consented_at", "is", null)
+      .order("consented_at", { ascending: true })
+      .range(from, from + SUPABASE_PAGE_SIZE - 1);
+
+    if (filters.startDate) query = query.gte("consented_at", startOfDate(filters.startDate));
+    if (filters.endDate) query = query.lt("consented_at", dayAfter(filters.endDate));
+
+    const { data, error } = await query;
+    if (error) throw error;
+    rows.push(...(data || []));
+    if (!data || data.length < SUPABASE_PAGE_SIZE) break;
+  }
+  return rows;
 }
 
 export function buildCaptainSignupReportRows(rows: CaptainSignupSourceRow[], minSignups: number) {
@@ -331,19 +353,25 @@ async function getEmailAudience(audience: BroadcastAudience, preference: Prefere
 
 async function getSubscriberEmailAudience(preference: PreferenceFilter) {
   const service = createServiceClient();
-  const { data, error } = await service
-    .from("subscribers")
-    .select("id,name,email,preference,email_consent,unsubscribed_at,subscription_token,profiles:captain_id(name)")
-    .eq("email_consent", true)
-    .not("email", "is", null)
-    .order("created_at", { ascending: true });
-  if (error) {
-    if (errorMessage(error).includes("subscription_token")) {
-      throw new Error("Missing subscribers.subscription_token. Run supabase/migrations/202605290001_add_subscription_management_tokens.sql in Supabase.");
+  const rows = [];
+  for (let from = 0; ; from += SUPABASE_PAGE_SIZE) {
+    const { data, error } = await service
+      .from("subscribers")
+      .select("id,name,email,preference,email_consent,unsubscribed_at,subscription_token,profiles:captain_id(name)")
+      .eq("email_consent", true)
+      .not("email", "is", null)
+      .order("created_at", { ascending: true })
+      .range(from, from + SUPABASE_PAGE_SIZE - 1);
+    if (error) {
+      if (errorMessage(error).includes("subscription_token")) {
+        throw new Error("Missing subscribers.subscription_token. Run supabase/migrations/202605290001_add_subscription_management_tokens.sql in Supabase.");
+      }
+      throw error;
     }
-    throw error;
+    rows.push(...(data || []));
+    if (!data || data.length < SUPABASE_PAGE_SIZE) break;
   }
-  return filterSubscribersByPreference(data || [], preference)
+  return filterSubscribersByPreference(rows, preference)
     .filter((subscriber) => Boolean(subscriber.email))
     .map(
       (subscriber) =>
