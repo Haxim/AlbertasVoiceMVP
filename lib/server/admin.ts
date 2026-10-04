@@ -402,23 +402,38 @@ async function getCaptainEmailAudience() {
 
 async function getSentRecipientIds(broadcastId: string, audience: BroadcastAudience) {
   const service = createServiceClient();
+  const sentRecipientIds = new Set<string>();
   if (audience === "CAPTAINS") {
-    const { data, error } = await service
-      .from("broadcast_deliveries")
-      .select("recipient_profile_id")
-      .eq("broadcast_id", broadcastId)
-      .eq("status", "SENT");
-    if (error) throw error;
-    return new Set((data || []).map((delivery) => delivery.recipient_profile_id).filter(Boolean));
+    for (let from = 0; ; from += SUPABASE_PAGE_SIZE) {
+      const { data, error } = await service
+        .from("broadcast_deliveries")
+        .select("recipient_profile_id")
+        .eq("broadcast_id", broadcastId)
+        .eq("status", "SENT")
+        .range(from, from + SUPABASE_PAGE_SIZE - 1);
+      if (error) throw error;
+      for (const delivery of data || []) {
+        if (delivery.recipient_profile_id) sentRecipientIds.add(delivery.recipient_profile_id);
+      }
+      if (!data || data.length < SUPABASE_PAGE_SIZE) break;
+    }
+    return sentRecipientIds;
   }
 
-  const { data, error } = await service
-    .from("broadcast_deliveries")
-    .select("subscriber_id")
-    .eq("broadcast_id", broadcastId)
-    .eq("status", "SENT");
-  if (error) throw error;
-  return new Set((data || []).map((delivery) => delivery.subscriber_id).filter(Boolean));
+  for (let from = 0; ; from += SUPABASE_PAGE_SIZE) {
+    const { data, error } = await service
+      .from("broadcast_deliveries")
+      .select("subscriber_id")
+      .eq("broadcast_id", broadcastId)
+      .eq("status", "SENT")
+      .range(from, from + SUPABASE_PAGE_SIZE - 1);
+    if (error) throw error;
+    for (const delivery of data || []) {
+      if (delivery.subscriber_id) sentRecipientIds.add(delivery.subscriber_id);
+    }
+    if (!data || data.length < SUPABASE_PAGE_SIZE) break;
+  }
+  return sentRecipientIds;
 }
 
 async function getEmailBroadcastProgress(broadcastId: string, audience: BroadcastAudience, preference: PreferenceFilter) {
