@@ -3,6 +3,8 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { runtimeEnv } from "@/lib/runtime-env";
 import type { Profile } from "@/lib/types";
 
+const SUPABASE_PAGE_SIZE = 1000;
+
 export type ThankYouEmailLogRow = {
   id: string;
   recipient_email: string;
@@ -131,16 +133,21 @@ async function getExistingDonorEmails(donors: Array<{ donor_key: string; currenc
   if (!donors.length) return existingEmails;
 
   const service = createServiceClient();
-  const { data, error } = await service
-    .from("stripe_donors")
-    .select("donor_key,currency,email")
-    .in("donor_key", Array.from(new Set(donors.map((donor) => donor.donor_key))));
-  if (error) throw error;
+  const donorKeys = Array.from(new Set(donors.map((donor) => donor.donor_key)));
+  for (let from = 0; ; from += SUPABASE_PAGE_SIZE) {
+    const { data, error } = await service
+      .from("stripe_donors")
+      .select("donor_key,currency,email")
+      .in("donor_key", donorKeys)
+      .range(from, from + SUPABASE_PAGE_SIZE - 1);
+    if (error) throw error;
 
-  for (const row of data || []) {
-    if (row.donor_key && row.currency && row.email) {
-      existingEmails.set(`${row.donor_key}:${row.currency}`, row.email);
+    for (const row of data || []) {
+      if (row.donor_key && row.currency && row.email) {
+        existingEmails.set(`${row.donor_key}:${row.currency}`, row.email);
+      }
     }
+    if (!data || data.length < SUPABASE_PAGE_SIZE) break;
   }
   return existingEmails;
 }
